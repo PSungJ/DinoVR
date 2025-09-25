@@ -1,0 +1,138 @@
+using System.Collections;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine;
+
+public class DinoStatus : MonoBehaviour
+{
+    [Header("스테이터스")]
+    public float hpMax = 100;           // 체력
+    public float moveSpeed = 4;         // 이동속도
+    public float hungerMax = 100;       // 최대 배고픔
+    public float thirstMax = 100;       // 최대 갈증
+
+    public float attackDamage = 50;      // 공격력
+    public float attackRange = 4;       // 공격 시작 사거리
+    [Tooltip("스폰 지점에서 부터 몇 미터 까지 돌아다닐 지 (서식 영역)")]
+    public float territoryRange = 50;    // 서식지 범위 ( 스폰 위치를 기준으로 최대 몇 미터까지 돌아다닐 지 )
+    [Tooltip("발자국 생성 주기")]
+    public float footStepInterval = 180;  // 발자국 생성 주기 (초)
+
+    [Header("스테이터스 2")]
+    [Tooltip("인내심 : 낮을 수록 쉽게 공격을 시도함")]
+    public float patience = 10;         // 인내심
+    [Tooltip("최대 공포수치")]
+    public float fearThreshold = 100;   // 최대 공포
+    [Tooltip("공포 감소 주기")]
+    public float fearReduceInterval = 1f; // 공포 감소 주기
+    [Tooltip("공포 지속시간")]
+    public float fearDuration = 5f;     // 공포 지속시간
+    [Tooltip("위협 생성 수치")]
+    public float threat = 0;            // 위협 생성
+    [Tooltip("시야밖 감지 예민성")]
+    public float awareness = 1;         // 시야밖 감지 예민성
+    public float detactRange = 20;      // 감지 거리
+
+    DinoBase dino;
+
+    float lastFearTime;
+
+    [Tooltip("육식여부")]
+    public bool isFoodMeat = false; // 육식 여부
+
+    [Header("확인용")]
+    public float hpCurrent;
+    public float moveSpeedCurrent;
+    public float fearCurrent;
+    public float hungerCurrent;
+    public float thirstCurrent;
+    public bool isDie = false;
+
+    private void Start()
+    {
+        hpCurrent = hpMax;
+        moveSpeedCurrent = moveSpeed;
+        fearCurrent = 0;
+        hungerCurrent = hungerMax;
+        thirstCurrent = thirstMax;
+
+        lastFearTime = Time.time;
+
+        dino = GetComponent<DinoBase>();
+        StartCoroutine(FearUpdate());
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, 10f);
+    }
+
+    IEnumerator FearUpdate()
+    {
+        while (dino.currentState != DinoState.DEATH)   // 죽지 않았다면
+        {
+            yield return new WaitForSeconds(0.1f);
+            if (fearCurrent > 0 && lastFearTime - Time.time >= fearReduceInterval)
+                fearCurrent -= 1f;
+            if (threat > 0)                                     // 위협 수치가 있는 공룡이라면
+            {
+                Debug.Log($"{gameObject.name}가 생존 자체로 위협!!");
+                Collider[] dinos = Physics.OverlapSphere(transform.position, 10f, LayerMask.GetMask("Dinosaur"));
+                foreach (Collider col in dinos)
+                {
+                    Debug.Log(col.name);
+                    if (col.gameObject == gameObject) continue; // 자기 자신 제외
+                    if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
+                    {
+                        if (stat.threat >= threat) continue; // 자신과 위협수치가 같거나 큰 개체에게는 공포 적용 제외
+                        stat.AddFear(threat, transform);
+                    }
+                }
+            }
+        }
+    }
+
+    public void AddFear(float amount, Transform fearOriginTr)
+    {
+        // 거리 보정    // 가까울 수록 공포 수치 증가
+        float sqrDist = Vector3.Magnitude(transform.position - fearOriginTr.position);
+        float disFactor = Mathf.Clamp01(1f / (sqrDist * 0.1f));
+
+        // 시야 보정    // 정면 120도 안이면 공포 1.5배
+        Vector3 dirToSource = (fearOriginTr.position - transform.position).normalized;
+        float angle = Vector3.Angle(transform.forward, dirToSource);
+        float angleFactor = (angle <= 120f) ? 1.5f : 1f;    
+
+        // 체력 보정   // 체력이 낮으면 더 민감하게 반응
+        float healthFactor = 1f;
+        float hpPercent = hpCurrent / hpMax;
+        if (hpPercent <= 0.3f) healthFactor = 2f;
+        else if (hpPercent <= 0.6f) healthFactor = 1.5f; 
+
+        float finalFear = amount * disFactor * healthFactor;
+
+        fearCurrent += finalFear;
+        dino.fearOrigin = fearOriginTr;
+        lastFearTime = Time.time;
+
+        Debug.Log($"현재 공포:{fearCurrent} 공포 {finalFear} 증가 = 기본:{amount} | 거리:{sqrDist} | 거리 보정:{disFactor} | 체력 비율:{hpPercent} | 체력 보정:{healthFactor}");
+    }
+
+    public bool IsAfraid()
+    {
+        bool terrified = fearCurrent >= fearThreshold;  // 공포 수치가 임계점을 넘었는지 확인
+        if (terrified)  // 넘었으면
+        {
+            fearCurrent = fearThreshold;
+            CancelInvoke("FearClear");          // 공포 지속시간 초기화
+            Invoke("FearClear", fearDuration);   // 지속시간만큼 대기
+        }
+        return terrified;
+    }
+
+    public void FearClear()
+    {
+        fearCurrent = 0;
+    }
+}
