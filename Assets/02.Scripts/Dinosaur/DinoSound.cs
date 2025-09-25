@@ -22,8 +22,8 @@ public class DinoSound : MonoBehaviour
     {
         int Index = Random.Range(0, growlClips.Length);
 
-        //AudioClip clip = growlClips[Index];
-        //audioSource.PlayOneShot(clip);
+        AudioClip clip = growlClips[Index];
+        audioSource.PlayOneShot(clip);
     }
 
     //Yelp Sounds (Random)
@@ -52,8 +52,8 @@ public class DinoSound : MonoBehaviour
     {
         int Index = Random.Range(0, roarClips.Length);
 
-        //AudioClip clip = roarClips[Index];
-        //audioSource.PlayOneShot(clip);
+        AudioClip clip = roarClips[Index];
+        audioSource.PlayOneShot(clip);
     }
 
 
