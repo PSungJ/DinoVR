@@ -6,13 +6,13 @@ LightmapParameters:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Terrain
+  m_Name: Terrain_GroupB
   serializedVersion: 3
   resolution: 0.1
   clusterResolution: 0.5
   irradianceBudget: 64
-  irradianceQuality: 8192
-  backFaceTolerance: 0.9
+  irradianceQuality: 512
+  backFaceTolerance: 0.5
   isTransparent: 0
   modellingTolerance: 0.01
   systemTag: -1
