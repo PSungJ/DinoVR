@@ -1,9 +1,17 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
 guid: 1ff204db5ae1e1f4cb7dc3aa73275e5c
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 10
+========
+guid: b81c599f39612cb4ba51b424523e9ad3
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
   mipmaps:
     mipMapMode: 0
     enableMipMap: 1
@@ -20,9 +28,15 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
+========
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -31,12 +45,21 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
     filterMode: -1
     aniso: -1
     mipBias: -100
     wrapU: -1
     wrapV: -1
     wrapW: -1
+========
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 0
+    wrapV: 0
+    wrapW: 0
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
   nPOTScale: 1
   lightmap: 0
   compressionQuality: 50
@@ -57,17 +80,27 @@ TextureImporter:
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
+========
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
+========
     textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -75,11 +108,56 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
     textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
+    buildTarget: Standalone
+========
+    buildTarget: WebGL
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Windows Store Apps
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -95,9 +173,13 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+<<<<<<<< HEAD:Assets/SciFi Warehouse Kit/Art/Textures/floor_tile_n.png.meta
   spritePackingTag: 
+========
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+>>>>>>>> b2d3751 (Feat : LightMapping Setting):Assets/03.Models/Structure/tree-branch/textures/Tree_Branch_NRM.png.meta
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
