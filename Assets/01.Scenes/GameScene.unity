@@ -97,8 +97,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000000, guid: b5aae4c45eef46440ae2300e2ca129b9,
-    type: 2}
+  m_LightingDataAsset: {fileID: 0}
   m_LightingSettings: {fileID: 4890085278179872738, guid: 1bc6935f79575fa4c86415547ce66edd,
     type: 2}
 --- !u!196 &4
@@ -211,7 +210,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: d55d6bac6b882e744a5319379d78afb8,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -542,7 +541,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: d55d6bac6b882e744a5319379d78afb8,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -1345,7 +1344,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: d55d6bac6b882e744a5319379d78afb8,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -1579,7 +1578,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 09af7cb0d1d6b1748a4b159981039ef4,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -2456,7 +2455,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: d55d6bac6b882e744a5319379d78afb8,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -2698,7 +2697,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 09af7cb0d1d6b1748a4b159981039ef4,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -2792,7 +2791,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 09af7cb0d1d6b1748a4b159981039ef4,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -2918,7 +2917,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 53c6fd6b353074f4d8fc9781be53d78f,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -4851,7 +4850,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 53c6fd6b353074f4d8fc9781be53d78f,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -4875,7 +4874,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 127
   m_IsActive: 1
 --- !u!4 &1687468188
 Transform:
@@ -5359,7 +5358,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 53c6fd6b353074f4d8fc9781be53d78f,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -50521,7 +50520,7 @@ Camera:
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
-  m_FocalLength: 14.999999
+  m_FocalLength: 20.78461
   m_BladeCount: 5
   m_Curvature: {x: 2, y: 11}
   m_BarrelClipping: 0.25
@@ -50535,8 +50534,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 8000
-  field of view: 77.31962
+  far clip plane: 1500
+  field of view: 60.000004
   orthographic: 0
   orthographic size: 10
   m_Depth: 1
@@ -50562,13 +50561,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1922094174}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: -0.92870337, z: -0, w: -0.37082362}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 215346157}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 1216.467, z: 0}
 --- !u!114 &1922094180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50831,7 +50830,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 53c6fd6b353074f4d8fc9781be53d78f,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -51155,7 +51154,7 @@ Terrain:
   m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 1
-  m_LightmapParameters: {fileID: 111300000, guid: 61ebb8d1f7ccd4a3f840d06107a5f1cb,
+  m_LightmapParameters: {fileID: 111300000, guid: 09af7cb0d1d6b1748a4b159981039ef4,
     type: 2}
   m_GroupingID: 1
   m_RenderingLayerMask: 257
@@ -62912,13 +62911,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5434442446669551649}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.19765733, y: 0, z: 0, w: 0.9802712}
+  m_LocalRotation: {x: 0.17364816, y: 0, z: 0, w: 0.9848078}
   m_LocalPosition: {x: 0, y: 500, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1513459489}
-  m_LocalEulerAnglesHint: {x: 22.8, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
 --- !u!1 &5765318995125966769
 GameObject:
   m_ObjectHideFlags: 0
