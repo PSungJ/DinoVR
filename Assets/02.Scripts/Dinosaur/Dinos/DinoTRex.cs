@@ -3,13 +3,18 @@ using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-public class DinoRaptor : DinoBase
+public class DinoTrex : DinoBase
 {
+    protected override void UpdateAnimator()
+    {
+        base.UpdateAnimator();
+        animator.SetBool(_aniSneak, currentState == DinoState.SNEAK);
+    }
 
     public override void Searching()
     {
         agent.isStopped = true;
-        
+
         if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
         {
             float dis = (status.target.position - transform.position).magnitude;
@@ -19,9 +24,20 @@ public class DinoRaptor : DinoBase
                 currentAttackTime += Time.deltaTime;
                 if (currentAttackTime >= toAttackTime)
                 {
-                    currentAttackTime = 0f;
-                    ChangeState(DinoState.CALL);
-                    isAnimating = true;
+                    DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
+                    if (targetStat != null)
+                    {
+                        if(targetStat.fearCurrent == 0)
+                        {
+                            currentAttackTime = 0f;
+                            ChangeState(DinoState.SNEAK);
+                        }
+                        else
+                        {
+                            currentAttackTime = 0f;
+                            ChangeState(DinoState.CHASING);
+                        }
+                    }
                 }
             }
         }
@@ -45,47 +61,33 @@ public class DinoRaptor : DinoBase
         }
     }
 
-    public override void Attack()
+    public override void Sneak()
     {
-        base.Attack();
-        animator.SetTrigger(_aniAttack);        // 공격 애니메이션 재생
-    }
-
-    public override void Call()
-    {
-        animator.SetTrigger(_aniCall);
-        agent.isStopped = true;
+        agent.isStopped = false;
         if (status.target == null)
         {
             ChangeState(DinoState.IDLE);
-            animator.ResetTrigger(_aniCall);
+            return;
         }
-        else if (isAnimating == false)
+        RotateSmoothly(status.target.position - transform.position);
+        MoveToward(status.target.position, status.moveSpeed/2f);
+        DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
+        if (targetStat != null)
         {
-            ChangeState(DinoState.CHASING);
-            animator.ResetTrigger(_aniCall);
-        }
-    }
-
-    public void Calling()
-    {
-        Collider[] raptors = Physics.OverlapSphere(transform.position, 30f, LayerMask.GetMask("Dinosaur"));
-        foreach (Collider col in raptors)
-        {
-            if (col.gameObject == gameObject) continue; // 자기 자신 제외
-            if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
+            if (targetStat.fearCurrent > 0)
             {
-                if (stat.threat == status.threat)
-                {
-                    col.TryGetComponent<DinoBase>(out DinoBase raptor);
-                    if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING)
-                    {
-                        stat.target = status.target;
-                        raptor.ChangeState(DinoState.CALL);
-                        raptor.isAnimating = true;
-                    }
-                }
+                ChangeState(DinoState.CHASING);
             }
         }
     }
+
+    public override void Attack()
+    {
+        base.Attack();
+        if ((transform.position - status.target.position).magnitude > status.attackRange / 2f)
+            animator.SetTrigger(_aniAttack);        // 공격 애니메이션 재생
+        else
+            animator.SetTrigger(_aniAttack1);
+    }
+
 }
