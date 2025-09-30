@@ -128,8 +128,9 @@ public class DinoStatus : MonoBehaviour
         fearCurrent += finalFear;
         fearOrigin = fearOriginTr;
         lastFearTime = Time.time;
+        IsAfraid();
 
-        Debug.Log($"현재 공포:{fearCurrent} 공포 {finalFear} 증가 = 거리 보정:{disFactor} | 시야보정:{disFactor} | 체력 보정:{healthFactor}");
+        //Debug.Log($"현재 공포:{fearCurrent} 공포 {finalFear} 증가 = 거리 보정:{disFactor} | 시야보정:{disFactor} | 체력 보정:{healthFactor}");
     }
 
     public bool IsAfraid()
@@ -160,6 +161,8 @@ public class DinoStatus : MonoBehaviour
                 nearestDistSqr = distSqr;
             }
         }
+        if (nearest == null && target != null)
+            nearest = target;        
         return nearest;
     }
 
