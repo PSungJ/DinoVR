@@ -3,8 +3,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
-                      // 기본,  배회,    먹기,    마시기,    잠,      도망,     공격,       찾기,    포효,   추적,   죽음
-public enum DinoState { IDLE, ROAMING, EATING, DRINKING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL};
+                      // 기본,  배회,    먹기,    마시기,    잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
+public enum DinoState { IDLE, ROAMING, EATING, DRINKING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK};
 
 public class DinoBase : MonoBehaviour
 {
@@ -35,6 +35,7 @@ public class DinoBase : MonoBehaviour
     protected readonly string _aniSleep = "IsSleep";
     protected readonly string _aniSearch = "IsSearch";
     protected readonly string _aniDeath = "IsDeath";
+    protected readonly string _aniSneak = "IsSneak";
     protected readonly string _aniRoar = "Roar";
     protected readonly string _aniHurt = "Hurt";
     protected readonly string _aniAttack = "Attack";
@@ -104,6 +105,9 @@ public class DinoBase : MonoBehaviour
             case DinoState.CALL:
                 Call();
                 break;
+            case DinoState.SNEAK:
+                Sneak();
+                break;
             case DinoState.CHASING:
                 Chasing();
                 break;
@@ -113,7 +117,7 @@ public class DinoBase : MonoBehaviour
         }
     }
 
-    public void UpdateAnimator()
+    protected virtual void UpdateAnimator()
     {
         animator.SetBool(_aniWalk, currentState == DinoState.ROAMING);
         animator.SetBool(_aniRun, currentState == DinoState.FLEEING || currentState == DinoState.CHASING);
@@ -126,7 +130,6 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Idle()  // 기본 상태
     {
-        ResetAnimationTrigger();
         isSearching = false;
         agent.isStopped = true;
         if (currentIdleTime < toRoamTime)           // toRoamTime 만큼 대기 후 떠돌기 위한 체크
@@ -143,7 +146,6 @@ public class DinoBase : MonoBehaviour
 
     protected void StartFleeing()       // 도망치라고 말했습니다.
     {
-        ResetAnimationTrigger();
         Vector3 fleeDir = (transform.position - status.fearOrigin.position).normalized;
 
         if (currentState != DinoState.FLEEING)  // 처음 도망갈 때
@@ -243,7 +245,18 @@ public class DinoBase : MonoBehaviour
         {
             if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
             {
-                
+                float dis = (status.target.position - transform.position).magnitude;
+                if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+                {
+                    RotateSmoothly(status.target.position - transform.position);
+                    currentAttackTime += Time.deltaTime;
+                    if (currentAttackTime >= toAttackTime)
+                    {
+                        currentAttackTime = 0f;
+                        ChangeState(DinoState.CHASING);
+                        isAnimating = true;
+                    }
+                }
             }
         }
     }
@@ -251,6 +264,10 @@ public class DinoBase : MonoBehaviour
     public virtual void Call()
     {
 
+    }
+    public virtual void Sneak()
+    {
+        
     }
 
     public virtual void Chasing()
@@ -276,7 +293,6 @@ public class DinoBase : MonoBehaviour
         if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
         {
             ChangeState(DinoState.ATTACKING);
-            ResetAnimationTrigger();
         }
         else if (status.IsAfraid())             // 사거리에 없고 공포 수치가 최대라면 도망치기
             StartFleeing();
@@ -286,7 +302,6 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Attack()    // 공격
     {
-        agent.isStopped = true;
         if (status.target == null)
         {
             if (status.isFoodMeat)
@@ -326,6 +341,7 @@ public class DinoBase : MonoBehaviour
 
     public void ChangeState(DinoState newState)
     {
+        ResetAnimationTrigger();
         currentState = newState;
     }
 
