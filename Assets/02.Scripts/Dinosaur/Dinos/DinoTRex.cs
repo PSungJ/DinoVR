@@ -70,7 +70,7 @@ public class DinoTrex : DinoBase
             return;
         }
         RotateSmoothly(status.target.position - transform.position);
-        MoveToward(status.target.position, status.moveSpeed/2f);
+        MoveToward(status.target.position, status.walkSpeed/2f);
         DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
         if (targetStat != null)
         {
