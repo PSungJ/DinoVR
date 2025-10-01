@@ -9,7 +9,8 @@ public class DinoStatus : MonoBehaviour
     public float hpMax = 100;           // 체력
     public float hungerMax = 100;       // 최대 배고픔
     public float thirstMax = 100;       // 최대 갈증
-    public float moveSpeed = 4;         // 이동속도
+    public float walkSpeed = 2;         // 걷는 속도
+    public float runSpeed = 4;         // 뛰는 속도
     public float rotationSpeed = 1f;    // 회전 속도
     [Tooltip("도망 거리")]
     public float fleeDistance = 30f;    // 도망 거리
@@ -58,7 +59,7 @@ public class DinoStatus : MonoBehaviour
     private void Start()
     {
         hpCurrent = hpMax;
-        moveSpeedCurrent = moveSpeed;
+        moveSpeedCurrent = walkSpeed;
         fearCurrent = 0;
         hungerCurrent = hungerMax;
         thirstCurrent = thirstMax;
