@@ -2690,7 +2690,6 @@ MonoBehaviour:
   attackRange: 11
   territoryRange: 50
   footStepInterval: 180
-  patience: 10
   fearThreshold: 100
   fearReduceInterval: 1
   fearDuration: 5
@@ -8740,7 +8739,7 @@ Transform:
   m_GameObject: {fileID: 4473174446415704813}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 26.63, y: 0, z: 11.24}
+  m_LocalPosition: {x: 22.16, y: 0, z: 29.81}
   m_LocalScale: {x: 0.9, y: 0.9, z: 0.9}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -10215,7 +10214,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &4502817552173391290
 GameObject:
   m_ObjectHideFlags: 0
@@ -12145,12 +12144,11 @@ MonoBehaviour:
   attackRange: 4
   territoryRange: 50
   footStepInterval: 180
-  patience: 1
   fearThreshold: 100
   fearReduceInterval: 1
   fearDuration: 5
   threat: 0
-  awareness: 10
+  awareness: 30
   detactRange: 20
   isFoodMeat: 0
   hpCurrent: 0
@@ -12767,7 +12765,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &5798191357683675751
 GameObject:
   m_ObjectHideFlags: 0
@@ -13126,12 +13124,11 @@ MonoBehaviour:
   attackRange: 4
   territoryRange: 50
   footStepInterval: 180
-  patience: 1
-  fearThreshold: 100
+  fearThreshold: 300
   fearReduceInterval: 1
   fearDuration: 5
   threat: 0
-  awareness: 10
+  awareness: 30
   detactRange: 20
   isFoodMeat: 0
   hpCurrent: 0
@@ -14694,12 +14691,11 @@ MonoBehaviour:
   attackRange: 4
   territoryRange: 50
   footStepInterval: 180
-  patience: 1
-  fearThreshold: 100
+  fearThreshold: 1000
   fearReduceInterval: 1
   fearDuration: 5
   threat: 0
-  awareness: 10
+  awareness: 30
   detactRange: 20
   isFoodMeat: 0
   hpCurrent: 0
@@ -18036,8 +18032,7 @@ MonoBehaviour:
   attackRange: 4
   territoryRange: 50
   footStepInterval: 180
-  patience: 1
-  fearThreshold: 100
+  fearThreshold: 300
   fearReduceInterval: 1
   fearDuration: 5
   threat: 3
@@ -18390,8 +18385,7 @@ MonoBehaviour:
   attackRange: 8
   territoryRange: 50
   footStepInterval: 180
-  patience: 10
-  fearThreshold: 100
+  fearThreshold: 300
   fearReduceInterval: 1
   fearDuration: 5
   threat: 0
