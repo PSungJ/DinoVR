@@ -62,7 +62,7 @@ public class DinoStaga : DinoBase
         {
             if (status.fearOrigin != null)
             {
-                if (Vector3.Distance(transform.position, status.fearOrigin.position) > status.attackRange)
+                if (status.IsAfraid())
                     StartFleeing();
             }
         }
