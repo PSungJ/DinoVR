@@ -163,7 +163,7 @@ public class DinoBase : MonoBehaviour
     public virtual void Roam()  // 떠도는 중
     {
         agent.isStopped = false;
-        agent.speed = status.moveSpeed / 2f;
+        agent.speed = status.walkSpeed;
         RotateSmoothly((agent.destination - transform.position).normalized);
         if (!agent.pathPending && agent.remainingDistance < 1f)     // 도착하면 기본상태로 전환
         {
@@ -189,7 +189,7 @@ public class DinoBase : MonoBehaviour
     public virtual void Fleeing()   // 도망
     {
         agent.isStopped = false;
-        agent.speed = status.moveSpeed;
+        agent.speed = status.runSpeed;
         RotateSmoothly((agent.destination - transform.position).normalized);
 
         if (!agent.pathPending && agent.remainingDistance < 1f) // 도망 지점에 도착하면 IDLE로 전환
@@ -279,7 +279,7 @@ public class DinoBase : MonoBehaviour
             return;
         }
         RotateSmoothly(status.target.position - transform.position);
-        MoveToward(status.target.position, status.moveSpeed);
+        MoveToward(status.target.position, status.runSpeed);
         if(Vector3.Distance(status.target.position,transform.position) <= status.attackRange)
         {
             ChangeState(DinoState.ATTACKING);
