@@ -53,10 +53,13 @@ public class DinoBase : MonoBehaviour
 
     protected virtual void Update()
     {
+        if (currentState == DinoState.DEATH)    // 죽었으면 다 무시
+            return;
+
         // 공포 원인이 나타났거나, 배고픈데 타겟을 발견했다면
-        if(status.fearOrigin != null)
+        if (status.fearOrigin != null)
         {
-            if(status.fearCurrent> 0 && isSearching == false)
+            if (status.fearCurrent > 0 && isSearching == false)
             {
                 isSearching = true;
                 ChangeState(DinoState.SEARCHING);   // 경계 태세 진입
@@ -192,12 +195,13 @@ public class DinoBase : MonoBehaviour
         agent.speed = status.runSpeed;
         RotateSmoothly((agent.destination - transform.position).normalized);
 
-        if (!agent.pathPending && agent.remainingDistance < 1f) // 도망 지점에 도착하면 IDLE로 전환
+        if (!agent.pathPending && agent.remainingDistance < 1f)     // 도망 지점에 도착하면 경계 상태로 전환
         {
             status.fearOrigin = null;
+            status.fearCurrent = 50f;
             ChangeState(DinoState.SEARCHING);
         }
-        else if (status.fearOrigin != null)                           // 도망중에 적이 사거리에 오면 최후의 공격 감행
+        else if (status.fearOrigin != null && !status.IsAfraid())                         // 도망중에 적이 사거리에 오면
         {
             float dis = (status.fearOrigin.position - transform.position).magnitude;
             if (dis <= status.attackRange)
@@ -211,14 +215,14 @@ public class DinoBase : MonoBehaviour
     {
         agent.isStopped = true;
 
-        if (status.isFoodMeat == false)
+        if (status.isFoodMeat == false) // 초식이면
         {
             if (status.fearCurrent == 0)    // 공포 수치가 0이 되면 경계 풀기
             {
                 ChangeState(DinoState.IDLE);
                 return;
             }
-            if (status.fearOrigin != null)
+            else if (status.fearOrigin != null)
             {
                 float dis = (status.fearOrigin.position - transform.position).magnitude;
                 if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
@@ -227,21 +231,20 @@ public class DinoBase : MonoBehaviour
                     if (status.IsAfraid())
                         StartFleeing();
                 }
-                else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
+                else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면
                 {                                
                     ChangeState(DinoState.ROAR);
                 }
-                else if (dis <= status.attackRange) // 공격사거리 안이라면 공격하기
+                else if (dis <= status.attackRange) // 공격사거리 안이라면
                 {
-                    ChangeState(DinoState.ATTACKING);
+                    if (!status.IsAfraid())
+                        ChangeState(DinoState.ATTACKING);
+                    else
+                        StartFleeing();
                 }
             }
-            else
-            {
-                ChangeState(DinoState.IDLE);
-            }
         }
-        else
+        else    // 육식이면
         {
             if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
             {
@@ -289,13 +292,14 @@ public class DinoBase : MonoBehaviour
     public virtual void Roar()  // 포효
     {
         animator.SetTrigger(_aniRoar);
-        agent.isStopped = true;                 // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
-        if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
+        agent.isStopped = true;                 
+        if (status.IsAfraid())                      // 공포상태라면 도망
+            StartFleeing();
+                                                    // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
+        else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
         {
             ChangeState(DinoState.ATTACKING);
         }
-        else if (status.IsAfraid())             // 사거리에 없고 공포 수치가 최대라면 도망치기
-            StartFleeing();
         else                                    // 그것도 다 아니라면 기본상태로 전환
             ChangeState(DinoState.IDLE);
     }
@@ -317,19 +321,25 @@ public class DinoBase : MonoBehaviour
 
         if (!isAnimating)
         {
-            if (status.fearOrigin != null)
+            if (status.isFoodMeat == false) // 초식
             {
-                if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
-                    ChangeState(DinoState.ATTACKING);
-                else
-                    StartFleeing();
+                if (status.fearOrigin != null)
+                {
+                    if (status.IsAfraid())
+                        StartFleeing();
+                }
             }
-            if (status.target != null)
+            else                            // 육식
             {
-                if (Vector3.Distance(transform.position, status.target.position) <= status.attackRange)
-                    ChangeState(DinoState.ATTACKING);
-                else
-                    ChangeState(DinoState.CHASING);
+                if (status.fearOrigin != null && status.IsAfraid())   // 공포원인이 있고 공포에 도달했다면 도망
+                    StartFleeing();
+                else if (status.target != null)                       // 그런거 없고 공격중인 타겟이 있다면
+                {
+                    if (Vector3.Distance(transform.position, status.target.position) <= status.attackRange)
+                        ChangeState(DinoState.ATTACKING);
+                    else
+                        ChangeState(DinoState.CHASING);
+                }
             }
         }
     }
