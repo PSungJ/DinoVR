@@ -23,9 +23,6 @@ public class DinoStatus : MonoBehaviour
     public float footStepInterval = 180;  // 발자국 생성 주기 (초)
 
     [Header("스테이터스 2")]
-    [Tooltip("인내심 : 인내심이 높으면 체력이 적어져도 공포 증폭이 덜해짐")]
-    [Range(1,10)]
-    public float patience = 1;         // patience
     [Tooltip("최대 공포수치")]
     public float fearThreshold = 100;   // 최대 공포
     [Tooltip("공포 감소 주기")]
@@ -79,10 +76,10 @@ public class DinoStatus : MonoBehaviour
 
     IEnumerator FearUpdate()        // 공포 감지
     {
-        while (dino.currentState != DinoState.DEATH)   // 죽지 않았다면
+        while (hpCurrent > 0)   // 죽지 않았다면
         {
             yield return new WaitForSeconds(0.1f);
-            if (fearCurrent > 0 && lastFearTime - Time.time >= fearReduceInterval)
+            if (fearCurrent > 0 && Time.time - lastFearTime >= fearReduceInterval)
             {
                 fearCurrent -= 1f;
             }
@@ -103,8 +100,11 @@ public class DinoStatus : MonoBehaviour
                     AddFear(stat.threat, col.transform);
                 }
             }
-            target = FindNearest(targetList,transform);
-            targetList.Clear();
+            if (isFoodMeat)
+            {
+                target = FindNearest(targetList, transform);
+                targetList.Clear();
+            }
         }
     }
 
@@ -122,11 +122,15 @@ public class DinoStatus : MonoBehaviour
         // 체력 보정   // 체력이 낮으면 더 민감하게 반응
         float healthFactor = 1f;
         float hpPercent = hpCurrent / hpMax;
-        healthFactor =  1 + (1f / patience *hpPercent);
+        healthFactor =  1f / hpPercent;
 
         float finalFear = amount * disFactor * healthFactor;
 
         fearCurrent += finalFear;
+        if (fearCurrent > fearThreshold)
+        {
+            fearCurrent = fearThreshold;
+        }
         fearOrigin = fearOriginTr;
         lastFearTime = Time.time;
         IsAfraid();
@@ -134,15 +138,9 @@ public class DinoStatus : MonoBehaviour
         //Debug.Log($"현재 공포:{fearCurrent} 공포 {finalFear} 증가 = 거리 보정:{disFactor} | 시야보정:{disFactor} | 체력 보정:{healthFactor}");
     }
 
-    public bool IsAfraid()
+    public bool IsAfraid()  // (공포 수치가 임계점을 넘었는지) 확인
     {
-        bool terrified = fearCurrent >= fearThreshold;  // 공포 수치가 임계점을 넘었는지 확인
-        if (terrified)  // 넘었으면
-        {
-            fearCurrent = fearThreshold;
-            CancelInvoke("FearClear");          // 공포 지속시간 초기화
-            Invoke("FearClear", fearDuration);   // 지속시간만큼 대기
-        }
+        bool terrified = fearCurrent >= fearThreshold;
         return terrified;
     }
 
@@ -165,10 +163,5 @@ public class DinoStatus : MonoBehaviour
         if (nearest == null && target != null)
             nearest = target;        
         return nearest;
-    }
-
-    public void FearClear()
-    {
-        fearCurrent = 0;
     }
 }
