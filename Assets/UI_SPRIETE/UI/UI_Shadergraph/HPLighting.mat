@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material
+  m_Name: HPLighting
   m_Shader: {fileID: -6465566751694194690, guid: 0789ed70d7d9d8b44bb2f643a2df9a77,
     type: 3}
   m_Parent: {fileID: 0}
@@ -108,7 +108,7 @@ Material:
     - _DstBlendAlpha: 0
     - _EdgeGrowIndensety: 5
     - _EdgeWidthFloat: 0.001
-    - _EmissionStrength: 93
+    - _EmissionStrength: 149
     - _EnvironmentReflections: 1
     - _FillAmount: 1
     - _GlossMapScale: 0
@@ -118,7 +118,7 @@ Material:
     - _JitterIntensity: 1
     - _Metallic: 0
     - _NoiseSpeed: -0.61
-    - _NoiseStrength: 0.11
+    - _NoiseStrength: 0.6
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueControl: 0
@@ -134,7 +134,7 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.11372549, g: 1, b: 0.21960784, a: 1}
+    - _BaseColor: {r: 0.11372548, g: 1, b: 0.2423029, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _DangerColor: {r: 1, g: 0.19339606, b: 0.19339606, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
