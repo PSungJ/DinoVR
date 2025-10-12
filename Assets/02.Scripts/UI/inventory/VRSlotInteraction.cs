@@ -1,88 +1,103 @@
-using UnityEngine;
+ï»¿using UnityEngine;
+using UnityEngine.UI; // Image ì‚¬ìš©
+using TMPro; // ğŸ’¡ Text Mesh Pro ì‚¬ìš©ì„ ìœ„í•´ ì¶”ê°€
 
-// ÀÌ ½ºÅ©¸³Æ®´Â ¸ğµç ÀÎº¥Åä¸®/Äü½½·Ô Slot UI GameObject¿¡ ºÎÂøµË´Ï´Ù.
+// ì´ ìŠ¤í¬ë¦½íŠ¸ëŠ” ëª¨ë“  ì¸ë²¤í† ë¦¬/í€µìŠ¬ë¡¯ Slot UI GameObjectì— ë¶€ì°©ë©ë‹ˆë‹¤.
 public class VRSlotInteraction : MonoBehaviour
 {
     [Header("Configuration")]
-    [Tooltip("ÀÌ ½½·ÔÀÌ ÀÎº¥Åä¸® ±×¸®µåÀÇ ÀÏºÎÀÌ¸é True, Äü½½·ÔÀÌ¸é False")]
+    [Tooltip("ì´ ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤ (ì¸ë²¤í† ë¦¬: 0~29, í€µìŠ¬ë¡¯: 0~4)")]
+    public int slotIndex;
+    [Tooltip("ì´ ìŠ¬ë¡¯ì´ ì¸ë²¤í† ë¦¬ ê·¸ë¦¬ë“œì˜ ì¼ë¶€ì´ë©´ True, í€µìŠ¬ë¡¯ì´ë©´ False")]
     public bool isInventorySlot = true;
 
     [Header("Dependencies")]
-    // InventoryManager ÂüÁ¶ (Swap ¹× Use È£Ãâ¿ë)
-    [SerializeField] private Inventory inventoryManager;
-    // QuickSlotManager ÂüÁ¶ (Assign È£Ãâ¿ë)
-    [SerializeField] private QuickSlotManager quickSlotManager;
+    [SerializeField] private Inventory inventoryManager; // ì¸ë²¤í† ë¦¬ ê´€ë¦¬ì ì°¸ì¡° (í•„ìˆ˜)
+    [SerializeField] private QuickSlotManager quickSlotManager; // í€µìŠ¬ë¡¯ ê´€ë¦¬ì ì°¸ì¡° (ì„ íƒ)
 
-    // ÀÌ ½½·ÔÀÇ ÀÎµ¦½º (ÀÎº¥Åä¸®: 0~29, Äü½½·Ô: 0~4)
-    public int slotIndex;
+    [Header("UI Display")]
+    [SerializeField] private Image itemIcon;
+    [SerializeField] private TextMeshProUGUI stackSizeText; // Text ëŒ€ì‹  TextMeshProUGUI ì‚¬ìš©
 
-    [Header("Custom VR Input for Swap")]
-    [SerializeField] private string grabButtonName = "VR_Grab_Button";
-
-    // µå·¡±× »óÅÂ ÃßÀûÀ» À§ÇÑ Á¤Àû ÇÊµå (¾îµğ¼­ ½ÃÀÛÇß´ÂÁö)
+    // ë“œë˜ê·¸ ìƒíƒœ ì¶”ì ì„ ìœ„í•œ ì •ì  í•„ë“œ (ì„ì‹œ)
     private static int dragSourceIndex = -1;
-    private static ItemBaseSO draggedItemData = null; // µå·¡±× ÁßÀÎ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ
-    private static Inventory dragSourceInventory = null; // µå·¡±× ½ÃÀÛ ÀÎº¥Åä¸® ÂüÁ¶
+    private static Inventory dragSourceInventory = null;
 
-    // VR Interaction Raycast hit ½Ã Grab ¹öÆ°ÀÌ ´­·ÈÀ» ¶§ È£Ãâ (Unity Event/Input System ¿¬°á ÇÊ¿ä)
+    // ----------------------------------------------------
+    // UI ê°±ì‹  í•¨ìˆ˜ (InventoryManagerì—ì„œ í˜¸ì¶œë¨)
+    // ----------------------------------------------------
+    public void UpdateSlotUI(ItemBaseSO item, int stack)
+    {
+        // ì•„ì´í…œì´ nullì´ ì•„ë‹ˆê±°ë‚˜ ìŠ¤íƒ í¬ê¸°ê°€ 0ë³´ë‹¤ í´ ë•Œë§Œ ì•„ì´í…œì´ ìˆëŠ” ê²ƒìœ¼ë¡œ ê°„ì£¼
+        bool hasItem = (item != null && stack > 0);
+
+        // 1. ì•„ì´ì½˜ ì—…ë°ì´íŠ¸
+        if (itemIcon != null)
+        {
+            itemIcon.sprite = hasItem ? item.icon : null;
+            itemIcon.enabled = hasItem;
+        }
+
+        // 2. ìˆ˜ëŸ‰ í…ìŠ¤íŠ¸ ì—…ë°ì´íŠ¸
+        if (stackSizeText != null)
+        {
+            // ìŠ¤íƒ ê°€ëŠ¥ ì•„ì´í…œì´ ìˆê³  ìˆ˜ëŸ‰ì´ 1ë³´ë‹¤ í´ ê²½ìš°ì—ë§Œ í‘œì‹œ
+            bool showStack = hasItem && item.maxStackSize > 1 && stack > 1;
+            stackSizeText.text = showStack ? stack.ToString() : "";
+            stackSizeText.enabled = showStack;
+        }
+    }
+
+    // ----------------------------------------------------
+    // VR ìƒí˜¸ì‘ìš© ë¡œì§ (ê°„ì†Œí™”ë¨)
+    // ----------------------------------------------------
+
+    // VR Interaction Raycast hit ì‹œ Grab ë²„íŠ¼ì´ ëˆŒë ¸ì„ ë•Œ í˜¸ì¶œ (Swap ì‹œì‘/ì¢…ë£Œ)
     public void OnGrabPressed()
     {
-        // 1. µå·¡±× ½ÃÀÛ (Source)
-        if (dragSourceIndex == -1) 
+        // 1. ë“œë˜ê·¸ ì‹œì‘ (Source) ë¡œì§
+        if (dragSourceIndex == -1)
         {
-            if (isInventorySlot && !inventoryManager.slots[slotIndex].IsEmpty)
+            if (isInventorySlot && inventoryManager != null && !inventoryManager.slots[slotIndex].IsEmpty)
             {
                 dragSourceIndex = slotIndex;
-                draggedItemData = inventoryManager.slots[slotIndex].itemData;
                 dragSourceInventory = inventoryManager;
-                // TODO: UI ÇÇµå¹é (¾ÆÀÌÄÜÀ» Æ÷ÀÎÅÍ¿¡ ºÎÂø)
+                // ... (ë“œë˜ê·¸ ì‹œì‘ UI í”¼ë“œë°±)
             }
         }
-        // 2. µå·Ó (Target)
-        else // µå·¡±× »óÅÂÀÎ °æ¿ì, µå·Ó ´ë»óÀ¸·Î Ã³¸®
-{
-    // µå·¡±× ½ÃÀÛÁ¡ÀÌ ÀÎº¥Åä¸®ÀÎÁö È®ÀÎ
-    if (dragSourceInventory == inventoryManager)
-    {
-        if (isInventorySlot)
+        // 2. ë“œë¡­ (Target) ë¡œì§
+        else
         {
-            // Case A: ÀÎº¥Åä¸® -> ÀÎº¥Åä¸® (Swap)
-            if (dragSourceIndex != slotIndex)
+            // ì¸ë²¤í† ë¦¬ ë‚´ ìŠ¬ë¡¯ êµí™˜
+            if (isInventorySlot && dragSourceInventory == inventoryManager)
             {
                 inventoryManager.SwapSlots(dragSourceIndex, slotIndex);
             }
+
+            // ìƒíƒœ ì´ˆê¸°í™”
+            dragSourceIndex = -1;
+            dragSourceInventory = null;
+            // ... (ë“œë¡­ ì¢…ë£Œ UI í”¼ë“œë°±)
         }
-        else // isQuickSlot == true (Äü½½·Ô UI ÄÄÆ÷³ÍÆ®¿¡ isInventorySlot=false·Î ¼³Á¤)
+    }
+
+    // VR Interaction Raycast hit ì‹œ Select ë²„íŠ¼ì´ ëˆŒë ¸ì„ ë•Œ í˜¸ì¶œ (ì•„ì´í…œ ì‚¬ìš©/ì¥ì°©)
+    public void OnSelectPressed()
+    {
+        if (isInventorySlot && inventoryManager != null)
         {
-            // Case B: ÀÎº¥Åä¸® -> Äü½½·Ô (Assign)
-            quickSlotManager.AssignItemToSlot(draggedItemData, slotIndex);
+            Debug.Log("Select Input Received on Slot " + slotIndex);
+            // InventoryManagerì˜ UseItem í•¨ìˆ˜ í˜¸ì¶œ (ì¥ì°©/ì†Œëª¨ ë¡œì§ ì‹¤í–‰)
+            inventoryManager.UseItem(slotIndex);
         }
     }
 
-    // »óÅÂ ÃÊ±âÈ­
-    dragSourceIndex = -1;
-    draggedItemData = null;
-    dragSourceInventory = null;
-    // TODO: UI ÇÇµå¹é Á¦°Å
-}
-    }
-
-    // VR Interaction Raycast hit ½Ã Select ¹öÆ°ÀÌ ´­·ÈÀ» ¶§ È£Ãâ (Unity Event/Input System ¿¬°á ÇÊ¿ä)
-    public void OnSelectPressed() {
-    // µå·¡±× ÁßÀÌ¶ó¸é Select ¹öÆ°µµ µå·ÓÀ¸·Î Ã³¸®ÇÒ ¼ö ÀÖ½À´Ï´Ù.
-    if (dragSourceIndex != -1)
+    // ì´ˆê¸°í™” ë° ì—°ê²° ê²€ì‚¬ (ì„ íƒ ì‚¬í•­)
+    private void Start()
     {
-        OnGrabPressed(); // µå·Ó ·ÎÁ÷ ½ÇÇà
+        if (inventoryManager == null)
+        {
+            Debug.LogError($"VRSlotInteraction on slot {gameObject.name} needs InventoryManager reference.");
+        }
     }
-    else if (isInventorySlot)
-    {
-        // ÀÎº¥Åä¸® ½½·ÔÀÌ¶ó¸é Use/Equip ·ÎÁ÷ È£Ãâ
-        inventoryManager.UseItem(slotIndex);
-    }
-    else // isQuickSlot
-    {
-        // Äü½½·Ô ½½·ÔÀÌ¶ó¸é ÇöÀç ¼±ÅÃµÈ Äü½½·Ô ¾ÆÀÌÅÛ »ç¿ë ·ÎÁ÷ È£Ãâ
-        quickSlotManager.UseCurrentSlotItem();
-    }
-}
 }
