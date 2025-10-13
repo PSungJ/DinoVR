@@ -1,79 +1,122 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class EnviManager : MonoBehaviour
 {
     [Header("Skybox Settings")]
-    public Material daySkybox;
-    public Material nightSkybox;
-    private bool isDay = true;
+    public Material proceduralSkybox; // Procedural Skybox 1개만 사용
+    [Range(0f, 1f)] public float currentTime = 0f; // 0 = 낮, 1 = 밤
+    private bool reverse = false; // 주기 방향 (낮→밤→낮)
 
     [Header("Lighting Settings")]
-    public Light directionalLight; // Directional Light 참조
-    public bool enableFogAtDay = true; // 낮에만 안개 표시
-    public bool disableFogAtNight = true; // 밤에 안개 끔
+    public Light directionalLight;
+    public float cycleDuration = 600f; // 낮↔밤 전체 주기 (초)
+    public float lightIntensityDay = 1.2f;
+    public float lightIntensityNight = 0.05f;
+    public Color lightColorDay = new Color(1f, 0.95f, 0.8f);
+    public Color lightColorNight = new Color(0.3f, 0.35f, 0.6f);
+
+    [Header("Fog Settings")]
+    public Color dayFogColor = new Color(0.7f, 0.8f, 0.8f, 1f);
+    public Color nightFogColor = new Color(0.05f, 0.05f, 0.1f, 1f);
+    public float dayFogDensity = 0.002f;
+    public float nightFogDensity = 0.005f;
 
     [Header("Rain Settings")]
     public ParticleSystem rainParticle;
     private bool isRaining = false;
+    private float rainTimer = 0f;
 
-    [Header("Cycle Settings")]
-    public float cycleDuration = 600f; // 10분 (600초)
+    [Range(0f, 1f)] public float rainStartChance = 0.1f; // 비 시작 확률
+    [Range(0f, 1f)] public float rainStopChance = 0.1f; // 비 멈출 확률
 
     private void Start()
     {
-        RenderSettings.skybox = daySkybox;
-        RenderSettings.fog = enableFogAtDay;
+        RenderSettings.skybox = proceduralSkybox;
+        RenderSettings.fog = true;
+        UpdateEnvironment(0f);
+
         if (directionalLight != null)
             directionalLight.enabled = true;
 
-        StartCoroutine(CycleRoutine());
+        StartCoroutine(DayNightCycle());
+        StartCoroutine(RainRoutine());
     }
 
-    private IEnumerator CycleRoutine()
+    private IEnumerator DayNightCycle()
     {
+        float halfCycle = cycleDuration / 2f;
+        float speed = 1f / halfCycle;
+
         while (true)
         {
-            yield return new WaitForSeconds(cycleDuration);
-            SwitchDayNight();
-            HandleRainChance();
+            // 낮 → 밤 → 낮 반복
+            currentTime += (reverse ? -1 : 1) * Time.deltaTime * speed;
+            currentTime = Mathf.Clamp01(currentTime);
+
+            if (currentTime >= 1f) reverse = true;
+            else if (currentTime <= 0f) reverse = false;
+
+            UpdateEnvironment(currentTime);
+            yield return null;
         }
     }
 
-    private void SwitchDayNight()
+    private void UpdateEnvironment(float t)
     {
-        isDay = !isDay;
-        // true : daySkybox, false : nightSkybox
-        RenderSettings.skybox = isDay ? daySkybox : nightSkybox;
+        if (proceduralSkybox == null) return;
 
-        // 낮/밤에 따라 라이트 On/Off, 안개 조정
+        // Skybox 파라미터 보간
+        float atmosphere = Mathf.Lerp(0.6f, 1.0f, t);
+        Color skyTint = Color.Lerp(new Color(0.6f, 0.8f, 1f), new Color(0.05f, 0.05f, 0.2f), t);
+        Color groundColor = Color.Lerp(new Color(0.4f, 0.3f, 0.2f), new Color(0.05f, 0.05f, 0.05f), t);
+
+        proceduralSkybox.SetFloat("_AtmosphereThickness", atmosphere);
+        proceduralSkybox.SetColor("_SkyTint", skyTint);
+        proceduralSkybox.SetColor("_GroundColor", groundColor);
+
+        // Directional Light (태양 궤적 + 색상 + 세기)
         if (directionalLight != null)
-            directionalLight.enabled = isDay;
+        {
+            directionalLight.transform.rotation = Quaternion.Euler(Mathf.Lerp(50f, -30f, t), 0f, 0f);
+            directionalLight.intensity = Mathf.Lerp(lightIntensityDay, lightIntensityNight, t);
+            directionalLight.color = Color.Lerp(lightColorDay, lightColorNight, t);
+        }
 
-        // disableFogAtNight은 끄는 조건이기에 "켜는 설정값(RenderSettings.fog)"에 넣을 때는 논리 반전(!) 이 필요
-        RenderSettings.fog = isDay ? enableFogAtDay : !disableFogAtNight;
+        // Fog 보간
+        RenderSettings.fogColor = Color.Lerp(dayFogColor, nightFogColor, t);
+        RenderSettings.fogDensity = Mathf.Lerp(dayFogDensity, nightFogDensity, t);
 
-        // 즉시 환경 반영
-        /* DynamicGI(Dynamic Global Illumination) : 실시간 조명 및 반사 환경을 갱신하거나 제어하기 위한 유니티의 핵심 유틸리티 클래스
-           주로 라이트맵이 아닌, 실시간으로 변화하는 조명/환경을 다룰 때 사용 */
         DynamicGI.UpdateEnvironment();
+    }
 
-        Debug.Log(isDay ? "낮으로 전환되었습니다." : "밤으로 전환되었습니다.");
+    private IEnumerator RainRoutine()
+    {
+        while (true)
+        {
+            rainTimer += Time.deltaTime;
+
+            // 10분마다 날씨 변화 시도
+            if (rainTimer >= 600f)
+            {
+                rainTimer = 0f;
+                HandleRainChance();
+            }
+
+            yield return null;
+        }
     }
 
     private void HandleRainChance()
     {
         if (!isRaining)
         {
-            // 비가 안 오는 중 → 10% 확률로 시작
-            if (Random.value <= 0.1f) // float 0 ~ 1 값 사이 랜덤 값 추출 
+            if (Random.value <= rainStartChance)
                 StartRain();
         }
         else
         {
-            // 비 오는 중 → 10% 확률로 종료
-            if (Random.value <= 0.1f)
+            if (Random.value <= rainStopChance)
                 StopRain();
         }
     }
@@ -83,7 +126,6 @@ public class EnviManager : MonoBehaviour
         isRaining = true;
         if (rainParticle != null)
             rainParticle.Play();
-
         Debug.Log("비가 내리기 시작합니다.");
     }
 
@@ -92,7 +134,6 @@ public class EnviManager : MonoBehaviour
         isRaining = false;
         if (rainParticle != null)
             rainParticle.Stop();
-
         Debug.Log("비가 그쳤습니다.");
     }
 }

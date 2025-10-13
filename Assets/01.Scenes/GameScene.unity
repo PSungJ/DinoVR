@@ -16,9 +16,9 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
   m_Fog: 1
-  m_FogColor: {r: 0.7000712, g: 0.8625099, b: 0.8679245, a: 1}
+  m_FogColor: {r: 0.7, g: 0.8, b: 0.8, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.00125
+  m_FogDensity: 0.002
   m_LinearFogStart: 0
   m_LinearFogEnd: 700
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
@@ -27,9 +27,9 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 8dd2f17b6e3f8174390967bc55ead836, type: 2}
-  m_HaloStrength: 0.5
-  m_FlareStrength: 1
+  m_SkyboxMaterial: {fileID: 2100000, guid: 26f55ddef4057d341bb944e97b32d31c, type: 2}
+  m_HaloStrength: 0
+  m_FlareStrength: 0
   m_FlareFadeSpeed: 3
   m_HaloTexture: {fileID: 0}
   m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
@@ -550,6 +550,74 @@ Terrain:
   m_EnableHeightmapRayTracing: 1
   m_EnableTreesAndDetailsRayTracing: 0
   m_TreeMotionVectorModeOverride: 3
+--- !u!1001 &238857360
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1153229274}
+    m_Modifications:
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 9.29
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2191045053582249258, guid: ba30b9262b59a1a4792c80173f4330df,
+        type: 3}
+      propertyPath: m_Name
+      value: RainEffect
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ba30b9262b59a1a4792c80173f4330df, type: 3}
 --- !u!1001 &285716233
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1082,6 +1150,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!198 &572342782 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 6903224756807677017, guid: ba30b9262b59a1a4792c80173f4330df,
+    type: 3}
+  m_PrefabInstance: {fileID: 238857360}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &572342784 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 500719938198355798, guid: ba30b9262b59a1a4792c80173f4330df,
+    type: 3}
+  m_PrefabInstance: {fileID: 238857360}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &652478996 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 738b85fc6a7f60d47aa3e91647837ed9,
@@ -2492,6 +2572,7 @@ Transform:
   - {fileID: 229809863}
   - {fileID: 2120139300}
   - {fileID: 760271326}
+  - {fileID: 572342784}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1265149635
@@ -2653,14 +2734,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b104e97b39827a419546e72637c7323, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  daySkybox: {fileID: 2100000, guid: 97fca95f33987e548be9dd7c03cb1a96, type: 2}
-  nightSkybox: {fileID: 2100000, guid: e0a21ebc98cee4e46bbae873ec0be703, type: 2}
+  proceduralSkybox: {fileID: 2100000, guid: 26f55ddef4057d341bb944e97b32d31c, type: 2}
+  currentTime: 0
   directionalLight: {fileID: 2953099654057463008}
-  enableFogAtDay: 1
-  disableFogAtNight: 1
-  rainParticle: {fileID: 6903224756807677017, guid: ba30b9262b59a1a4792c80173f4330df,
-    type: 3}
   cycleDuration: 600
+  lightIntensityDay: 1.2
+  lightIntensityNight: 0.05
+  lightColorDay: {r: 1, g: 0.95, b: 0.8, a: 1}
+  lightColorNight: {r: 0.3, g: 0.35, b: 0.6, a: 1}
+  dayFogColor: {r: 0.7, g: 0.8, b: 0.8, a: 1}
+  nightFogColor: {r: 0.05, g: 0.05, b: 0.1, a: 1}
+  dayFogDensity: 0.002
+  nightFogDensity: 0.005
+  rainParticle: {fileID: 572342782}
+  rainStartChance: 0.1
+  rainStopChance: 0.1
 --- !u!4 &1735760651
 Transform:
   m_ObjectHideFlags: 0
@@ -6496,16 +6584,16 @@ ReflectionProbe:
   m_Enabled: 1
   serializedVersion: 2
   m_Type: 0
-  m_Mode: 0
-  m_RefreshMode: 0
-  m_TimeSlicingMode: 0
+  m_Mode: 1
+  m_RefreshMode: 1
+  m_TimeSlicingMode: 1
   m_Resolution: 128
   m_UpdateFrequency: 0
   m_BoxSize: {x: 2000, y: 500, z: 2000}
   m_BoxOffset: {x: 0, y: 0, z: 0}
   m_NearClip: 0.3
   m_FarClip: 1000
-  m_ShadowDistance: 100
+  m_ShadowDistance: 40
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_CullingMask:
@@ -6514,7 +6602,7 @@ ReflectionProbe:
   m_IntensityMultiplier: 0
   m_BlendDistance: 1
   m_HDR: 0
-  m_BoxProjection: 0
+  m_BoxProjection: 1
   m_RenderDynamicObjects: 0
   m_UseOcclusionCulling: 1
   m_Importance: 1
@@ -10950,7 +11038,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 255
-  m_Lightmapping: 1
+  m_Lightmapping: 4
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 16000, y: 16000}
   m_BounceIntensity: 1
