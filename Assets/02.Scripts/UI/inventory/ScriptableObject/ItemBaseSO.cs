@@ -15,7 +15,7 @@ public abstract class ItemBaseSO : ScriptableObject
     public string itemName = "New Item";
     [TextArea(3, 5)]
     public string description = "Item description.";
-    public Sprite icon;
+    public Sprite itemIcon;
 
     // 아이템의 종류 (Inspector에서 설정)
     public ItemType itemType = ItemType.General;
