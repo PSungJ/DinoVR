@@ -38,7 +38,7 @@ public class EquipmentSlotUI : MonoBehaviour
         
         if (itemIcon != null)
         {
-            itemIcon.sprite = isEquipped? currentItem.icon : null;
+            itemIcon.sprite = isEquipped? currentItem.itemIcon : null;
     itemIcon.enabled = isEquipped;
         }
 
