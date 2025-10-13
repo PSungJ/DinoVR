@@ -27,7 +27,7 @@ public class QuickSlotUI : MonoBehaviour
         if (index >= 0 && index < slotIcons.Count && slotIcons[index] != null)
         {
             bool hasItem = (item != null);
-            slotIcons[index].sprite = hasItem ? item.icon : null;
+            slotIcons[index].sprite = hasItem ? item.itemIcon : null;
             slotIcons[index].enabled = hasItem;
         }
     }
