@@ -87,7 +87,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
-    - _AtmosphereThickness: 0.6872374
+    - _AtmosphereThickness: 0.611191
     - _Blend: 0
     - _BumpScale: 1
     - _ClearCoatMask: 0
@@ -122,8 +122,8 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GroundColor: {r: 0.32366735, g: 0.24547668, b: 0.16728601, a: 1}
-    - _SkyTint: {r: 0.4800487, g: 0.63643, b: 0.82552534, a: 1}
+    - _GroundColor: {r: 0.39020792, g: 0.29300568, b: 0.1958034, a: 1}
+    - _SkyTint: {r: 0.5846125, g: 0.779017, b: 0.9776181, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   m_BuildTextureStacks: []
