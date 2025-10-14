@@ -49,6 +49,7 @@ public class DinoBase : MonoBehaviour
         TryGetComponent<NavMeshAgent>(out agent);
         TryGetComponent<Animator>(out animator);
         agent.updateRotation = false;
+        agent.isStopped = true;
     }
 
     protected virtual void Update()
@@ -70,6 +71,12 @@ public class DinoBase : MonoBehaviour
             isSearching = true;
             ChangeState(DinoState.SEARCHING);
         }
+
+        if (agent.hasPath)
+        {
+            MoveWithSteering();
+        }
+
         HandleState();
         UpdateAnimator();
     }
@@ -134,7 +141,7 @@ public class DinoBase : MonoBehaviour
     public virtual void Idle()  // 기본 상태
     {
         isSearching = false;
-        agent.isStopped = true;
+        
         if (currentIdleTime < toRoamTime)           // toRoamTime 만큼 대기 후 떠돌기 위한 체크
         {
             currentIdleTime += Time.deltaTime;
@@ -165,10 +172,9 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Roam()  // 떠도는 중
     {
-        agent.isStopped = false;
         agent.speed = status.walkSpeed;
-        RotateSmoothly((agent.destination - transform.position).normalized);
-        if (!agent.pathPending && agent.remainingDistance < 1f)     // 도착하면 기본상태로 전환
+        //RotateSmoothly((agent.destination - transform.position).normalized);
+        if (agent.destination == transform.position)     // 도착하면 기본상태로 전환
         {
             ChangeState(DinoState.IDLE);
         }
@@ -176,26 +182,26 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Eating()
     {
-        agent.isStopped = true;
+        
     }
 
     public virtual void Drink()
     {
-        agent.isStopped = true;
+        
     }
 
     public virtual void Sleeping()
     {
-        agent.isStopped = true;
+        
     }
 
     public virtual void Fleeing()   // 도망
     {
-        agent.isStopped = false;
+        //agent.isStopped = false;
         agent.speed = status.runSpeed;
-        RotateSmoothly((agent.destination - transform.position).normalized);
+        //RotateSmoothly((agent.destination - transform.position).normalized);
 
-        if (!agent.pathPending && agent.remainingDistance < 1f)     // 도망 지점에 도착하면 경계 상태로 전환
+        if (agent.destination == transform.position)     // 도망 지점에 도착하면 경계 상태로 전환
         {
             status.fearOrigin = null;
             status.fearCurrent = 50f;
@@ -213,11 +219,11 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Searching() // 경계 태세
     {
-        agent.isStopped = true;
+        agent.destination = transform.position;
 
         if (status.isFoodMeat == false) // 초식이면
         {
-            if (status.fearCurrent == 0)    // 공포 수치가 0이 되면 경계 풀기
+            if (status.fearCurrent <= 0)    // 공포 수치가 0이 되면 경계 풀기
             {
                 ChangeState(DinoState.IDLE);
                 return;
@@ -225,14 +231,16 @@ public class DinoBase : MonoBehaviour
             else if (status.fearOrigin != null)
             {
                 float dis = (status.fearOrigin.position - transform.position).magnitude;
-                if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+                if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
                 {
                     RotateSmoothly(status.fearOrigin.position - transform.position);
                     if (status.IsAfraid())
                         StartFleeing();
+                    else if (status.fearCurrent >= status.fearThreshold*0.2f)
+                        StartFleeing();
                 }
                 else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면
-                {                                
+                {
                     ChangeState(DinoState.ROAR);
                 }
                 else if (dis <= status.attackRange) // 공격사거리 안이라면
@@ -275,16 +283,16 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Chasing()
     {
-        agent.isStopped = false;
         if(status.target == null)
         {
             ChangeState(DinoState.IDLE);
             return;
         }
-        RotateSmoothly(status.target.position - transform.position);
-        MoveToward(status.target.position, status.runSpeed);
+        agent.destination = status.target.position;
+        agent.speed = status.runSpeed;
         if(Vector3.Distance(status.target.position,transform.position) <= status.attackRange)
         {
+            agent.destination = transform.position;
             ChangeState(DinoState.ATTACKING);
         }
     }
@@ -292,7 +300,7 @@ public class DinoBase : MonoBehaviour
     public virtual void Roar()  // 포효
     {
         animator.SetTrigger(_aniRoar);
-        agent.isStopped = true;                 
+                         
         if (status.IsAfraid())                      // 공포상태라면 도망
             StartFleeing();
                                                     // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
@@ -335,6 +343,7 @@ public class DinoBase : MonoBehaviour
                     StartFleeing();
                 else if (status.target != null)                       // 그런거 없고 공격중인 타겟이 있다면
                 {
+                    isAnimating = true;
                     if (Vector3.Distance(transform.position, status.target.position) <= status.attackRange)
                         ChangeState(DinoState.ATTACKING);
                     else
@@ -346,7 +355,7 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Death()
     {
-        agent.isStopped = true;
+        
     }
 
     public void ChangeState(DinoState newState)
@@ -398,4 +407,37 @@ public class DinoBase : MonoBehaviour
         Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotSpeed * Time.deltaTime);
     }
+
+    void MoveWithSteering()
+    {
+        if (agent.pathPending || !agent.hasPath) return;
+
+        Vector3 target = agent.steeringTarget;
+        Vector3 dir = (target - transform.position);
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.1f)
+        {
+            agent.ResetPath();
+            return;
+        }
+
+        Vector3 moveDir = dir.normalized;
+
+        // 회전
+        Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.rotationSpeed * Time.deltaTime);
+
+        // 현재 정면과 목표 방향의 각도 차이
+        float angle = Vector3.Angle(transform.forward, moveDir);
+
+        // 각도가 작을수록 빠르게, 클수록 느리게 전진
+        float alignmentFactor = Mathf.Clamp01(1f - (angle / 90f)); // 0~90도 기준으로 보정
+        float currentSpeed = agent.speed * alignmentFactor;
+
+        // 이동
+        transform.position += transform.forward * currentSpeed * Time.deltaTime;
+    }
+
+
+
 }
