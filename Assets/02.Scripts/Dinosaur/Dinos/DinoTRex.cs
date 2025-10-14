@@ -13,7 +13,8 @@ public class DinoTrex : DinoBase
 
     public override void Searching()
     {
-        agent.isStopped = true;
+        if(agent.hasPath)
+            agent.ResetPath();
 
         if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
         {
@@ -69,8 +70,8 @@ public class DinoTrex : DinoBase
             ChangeState(DinoState.IDLE);
             return;
         }
-        RotateSmoothly(status.target.position - transform.position);
-        MoveToward(status.target.position, status.walkSpeed/2f);
+        agent.speed = status.walkSpeed / 2;
+        agent.destination = status.target.position;
         DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
         if (targetStat != null)
         {
@@ -84,10 +85,17 @@ public class DinoTrex : DinoBase
     public override void Attack()
     {
         base.Attack();
-        if ((transform.position - status.target.position).magnitude > status.attackRange / 2f)
+        if (Vector3.Distance(transform.position, status.target.position) > status.attackRange * 0.8f)
+        {
             animator.SetTrigger(_aniAttack);        // 공격 애니메이션 재생
+            if (!agent.hasPath)
+                agent.destination = status.target.position;
+        }
         else
+        {
             animator.SetTrigger(_aniAttack1);
+            if (agent.hasPath)
+                agent.ResetPath();
+        }
     }
-
 }
