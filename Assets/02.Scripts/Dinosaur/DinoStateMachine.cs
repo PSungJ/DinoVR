@@ -20,7 +20,7 @@ public class DinoStateMachine : StateMachineBehaviour
         var dino = animator.GetComponent<DinoBase>();
         if (dino != null)
         {
-           dino.SetAnimate(false, "");
+           dino.SetAnimate(false, stateInfo.shortNameHash.ToString());
         }
     }
 }
