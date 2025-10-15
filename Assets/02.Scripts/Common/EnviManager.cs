@@ -25,7 +25,6 @@ public class EnviManager : MonoBehaviour
     [Header("Rain Settings")]
     public ParticleSystem rainParticle;
     private bool isRaining = false;
-    private float rainTimer = 0f;
 
     [Range(0f, 1f)] public float rainStartChance = 0.1f; // ºñ ½ÃÀÛ È®·ü
     [Range(0f, 1f)] public float rainStopChance = 0.1f; // ºñ ¸ØÃâ È®·ü

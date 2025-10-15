@@ -6,6 +6,7 @@ public class SpawnManager : MonoBehaviour
 {
     [SerializeField] private List<TerrainSpawnData> terrainDataList; // 테레인별 데이터 모음
     private TerrainSpawnData currentData;
+    private Transform currentTerrainParent;
 
     /// <summary>
     /// 외부에서 현재 테레인을 지정할 때 호출
@@ -16,9 +17,31 @@ public class SpawnManager : MonoBehaviour
         currentData = terrainDataList.Find(t => t.terrainName == terrainName);
         if (currentData == null)
         {
-            Debug.LogWarning($"TerrainSpawnData for '{terrainName}' not found.");
+            Debug.Log($"TerrainSpawnData for '{terrainName}' not found.");
             return;
         }
+
+        // Terrain GameObject 찾기 (Hierarchy에서 이름으로)
+        GameObject terrainObj = GameObject.Find(terrainName);
+        if (terrainObj != null)
+        {
+            // Terrain 하위에 "Dinos" 폴더가 없다면 생성
+            Transform dinosFolder = terrainObj.transform.Find("Dinos");
+            if (dinosFolder == null)
+            {
+                GameObject folder = new GameObject("Dinos");
+                folder.transform.SetParent(terrainObj.transform);
+                folder.transform.localPosition = Vector3.zero;
+                dinosFolder = folder.transform;
+            }
+            currentTerrainParent = dinosFolder;
+        }
+        else
+        {
+            Debug.LogWarning($"Terrain GameObject '{terrainName}' not found in scene.");
+            currentTerrainParent = null;
+        }
+
         SpawnDinos();
     }
 
@@ -33,15 +56,13 @@ public class SpawnManager : MonoBehaviour
         {
             for (int i = 0; i < info.count; i++)
             {
-                // 확률 체크 (0~1)
                 if (Random.value <= info.probability)
                 {
                     Vector3 pos = GetRandomPositionOnTerrain();
-
-                    // 풀링에서 해당 공룡 prefab 꺼내기
                     string key = info.dinoData.dino.ToString();
+
                     GameObject dino = PoolingManager.Instance.SpawnFromPool(
-                        key, pos, Quaternion.identity
+                        key, pos, Quaternion.identity, currentTerrainParent // 부모 전달
                     );
 
                     if (dino == null)
@@ -71,7 +92,7 @@ public class SpawnManager : MonoBehaviour
 
         float x = terrainPos.x + Random.Range(0f, terrainWidth);
         float z = terrainPos.z + Random.Range(0f, terrainLength);
-        float y = t.SampleHeight(new Vector3(x, 0f, z)) + terrainPos.y;
+        float y = t.SampleHeight(new Vector3(x, 0f, z)) + terrainPos.y + 0.1f;
 
         return new Vector3(x, y, z);
     }
