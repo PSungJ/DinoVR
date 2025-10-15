@@ -1,76 +1,53 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using System.Timers;
 using UnityEngine;
 
 public class DinoRaptor : DinoBase
 {
-
 
     public override void Searching()
     {
         if (agent.hasPath)
             agent.ResetPath();
 
-        searchingTime += Time.deltaTime;
-
-        if (status.hungerCurrent > status.stats.hungerMax / 2f || searchingTime >= 10f)
+        if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
         {
-            if (status.target != null)
-            {
-                status.AddFear(0.1f, status.target);
-            }
-        }
-
-        if (status.fearCurrent <= 0 && status.target != null) // 배고픈 상태에서 공포가 0 이고, 타겟이 존재하면
-        {
-            if (!IsLive(status.target)) // 타겟이 죽어있다면 리턴
+            if (!IsLive(status.target))
             {
                 ResetTarget();
                 return;
             }
-            RotateSmoothly(status.target.position - transform.position);
-            currentAttackTime += Time.deltaTime;
-            if (currentAttackTime >= toAttackTime)  // 공격 대기시간 대기
+            float dis = (status.target.position - transform.position).magnitude;
+            if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
-                currentAttackTime = 0f;
-                float dis = (status.target.position - transform.position).magnitude;
-                if(status.meat != null && dis > status.stats.detactRange / 2f) // 먹을게 있는데 멀리서 다가온다면
+                RotateSmoothly(status.target.position - transform.position);
+                currentAttackTime += Time.deltaTime;
+                if (currentAttackTime >= toAttackTime)
                 {
-                    if (Time.time - lastRoarTime >= 5f)
-                        ChangeState(DinoState.ROAR);
-                }
-                else if (status.RayCheck(status.target))
-                {
+                    currentAttackTime = 0f;
                     ChangeState(DinoState.CALL);
                     isAnimating = true;
                 }
             }
         }
-        else if (status.fearOrigin != null && status.fearCurrent > 0)
+        else if (status.fearOrigin != null)
         {
             float dis = (status.fearOrigin.position - transform.position).magnitude;
-            if (dis > status.stats.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
                 RotateSmoothly(status.fearOrigin.position - transform.position);
                 if (status.IsAfraid())
                     StartFleeing();
-                else if (status.fearCurrent >= status.stats.fearThreshold * 0.2f && Time.time - lastRoarTime >= 5f)
-                    ChangeState(DinoState.ROAR);
             }
-            else if (dis > status.stats.attackRange * 2f && Time.time - lastRoarTime >= 5f)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
+            else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
             {
                 ChangeState(DinoState.ROAR);
             }
-            else
-            {
-                ChangeState(DinoState.CALL);
-            }
         }
-        else if (status.fearCurrent <= 0)
+        else
         {
-            ResetTarget();
+            ChangeState(DinoState.IDLE);
         }
     }
 
@@ -78,14 +55,6 @@ public class DinoRaptor : DinoBase
 
     public override void Chasing()
     {
-        agent.speed = status.stats.runSpeed;
-
-        if (status.IsAfraid())
-        {
-            StartFleeing();
-            return;
-        }
-
         if (status.target == null)
         {
             ChangeState(DinoState.IDLE);
@@ -93,17 +62,18 @@ public class DinoRaptor : DinoBase
         }
         if (Time.time - lastAttackTime > 5f)        // 마지막 공격으로 부터 5초가 넘었다면 추격 후 공격
         {
-            if (Vector3.Distance(status.target.position, transform.position) <= status.stats.attackRange)
+            agent.destination = status.target.position;
+            agent.speed = status.runSpeed;
+            if (Vector3.Distance(status.target.position, transform.position) <= status.attackRange)
             {
-                agent.SetDestination(transform.position);
+                agent.destination = transform.position;
                 ChangeState(DinoState.ATTACKING);
             }
-            else
-                agent.SetDestination(status.target.position);
         }
         else if (!agent.hasPath)                    // 공격 후 5초간 랜덤 좌표 배회
         {
             agent.destination = GetRandomPoint(transform.position,20f);
+            agent.speed = status.runSpeed;
         }
     }
 
@@ -142,6 +112,7 @@ public class DinoRaptor : DinoBase
     public override void Call()
     {
         animator.SetTrigger(_aniCall);
+        agent.isStopped = true;
         if (status.target == null)
         {
             ChangeState(DinoState.IDLE);
@@ -156,17 +127,16 @@ public class DinoRaptor : DinoBase
 
     public void Calling()
     {
-        sound.PlayBark();
-        Collider[] raptors = Physics.OverlapSphere(transform.position, 80f, LayerMask.GetMask("Dinosaur"));
+        Collider[] raptors = Physics.OverlapSphere(transform.position, 30f, LayerMask.GetMask("Dinosaur"));
         foreach (Collider col in raptors)
         {
             if (col.gameObject == gameObject) continue; // 자기 자신 제외
             if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
             {
-                if (stat.stats.threat == status.stats.threat)
+                if (stat.threat == status.threat)
                 {
                     col.TryGetComponent<DinoBase>(out DinoBase raptor);
-                    if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING && raptor.currentState != DinoState.ATTACKING)
+                    if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING)
                     {
                         stat.target = status.target;
                         raptor.ChangeState(DinoState.CALL);

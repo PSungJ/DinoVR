@@ -17,33 +17,26 @@ public class DinoAttack : MonoBehaviour
         rb.isKinematic = true;
         status = GetComponentInParent<DinoStatus>();
         dino = GetComponentInParent<DinoBase>();
-        damage = status.stats.attackDamage;
+        damage = status.attackDamage;
     }
 
     private void OnTriggerEnter(Collider other)
     {
         var enemy = other.GetComponentInParent<DinoDamage>();
-        if (enemy != null)  // 상대가 공룡이라면
+        if (enemy == null)  // 상대가 공룡이 아니라면 리턴
+            return;
+        else 
         {
             var enemyStat = enemy.GetComponent<DinoStatus>();
-            if (enemyStat.stats.threat == status.stats.threat)      // 상태가 공룡인데 같은 종이면 리턴
+            if (enemyStat.threat == status.threat)  // 상태가 공룡인데 같은 종이면 리턴
                 return;
-
-            if (!hitList.Contains(enemy))
-            {
-                CancelInvoke("ResetAttack");
-                Invoke("ResetAttack", 1f);
-                enemy.Damage(other, damage);
-                hitList.Add(enemy);
-            }
         }
-        else                // 상대가 플레이어 라면
+        if (!hitList.Contains(enemy))
         {
-            // var player = other.GetComponent<Player>();
-            // if (player != null)
-            //{
-            //    player.Damage();
-            //}
+            CancelInvoke("ResetAttack");
+            Invoke("ResetAttack", 1f);
+            enemy.Damage(other, damage);
+            hitList.Add(enemy);
         }
     }
 
