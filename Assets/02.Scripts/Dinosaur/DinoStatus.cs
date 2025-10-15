@@ -50,7 +50,9 @@ public class DinoStatus : MonoBehaviour
     public float thirstCurrent;
     public bool isDie = false;
     public List<Transform> targetList;   // 사냥감 후보 리스트
+    public List<Transform> meatList;   // 사냥감 후보 리스트
     public Transform target;            // 가장 가까운 사냥감
+    public Transform meat;              // 가장 가까운 고기
     public Transform fearOrigin;        // 공포 원인
 
     private void Start()
@@ -76,9 +78,11 @@ public class DinoStatus : MonoBehaviour
 
     IEnumerator FearUpdate()        // 공포 감지
     {
-        while (hpCurrent > 0)   // 죽지 않았다면
+        while (!isDie)   // 죽지 않았다면
         {
             yield return new WaitForSeconds(0.1f);
+            if (hungerCurrent > 0)
+                hungerCurrent -= 0.1f;
             if (fearCurrent > 0 && Time.time - lastFearTime >= fearReduceInterval)
             {
                 fearCurrent -= 1f;
@@ -90,19 +94,28 @@ public class DinoStatus : MonoBehaviour
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
                 if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
                 {
-                    if (stat.threat <= threat)
+                    if (stat.threat <= threat || stat.isDie)
                     {
                         if(isFoodMeat && stat.threat < threat)
-                            targetList.Add(col.transform);
+                        {
+                            if(stat.isDie)
+                                meatList.Add(col.transform);
+                            else
+                                targetList.Add(col.transform);
+                        }
+
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
                     AddFear(stat.threat, col.transform);
                 }
             }
-            if (isFoodMeat)
+            if (isFoodMeat) // 육식공룡 이라면
             {
-                target = FindNearest(targetList, transform);
+                target = FindNearest(targetList, transform);    // 가장 가까운 적 타겟 지정
                 targetList.Clear();
+
+                meat = FindNearest(meatList, transform);        // 가장 가까운 고기 지정
+                meatList.Clear();
             }
         }
     }

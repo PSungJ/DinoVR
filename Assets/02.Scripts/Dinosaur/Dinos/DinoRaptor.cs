@@ -13,6 +13,11 @@ public class DinoRaptor : DinoBase
 
         if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
         {
+            if (!IsLive(status.target))
+            {
+                ResetTarget();
+                return;
+            }
             float dis = (status.target.position - transform.position).magnitude;
             if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
@@ -82,6 +87,11 @@ public class DinoRaptor : DinoBase
         }
         else
         {
+            if (!IsLive(status.target))
+            {
+                ResetTarget();
+                return;
+            }
             RotateSmoothly(status.target.position - transform.position);
         }
 
@@ -93,7 +103,6 @@ public class DinoRaptor : DinoBase
                 StartFleeing();
             else if (status.target != null)                       // 그런거 없고 공격중인 타겟이 있다면
             {
-                isAnimating = true;
                 lastAttackTime = Time.time;
                 ChangeState(DinoState.CHASING);
             }
@@ -112,7 +121,6 @@ public class DinoRaptor : DinoBase
         else if (isAnimating == false)
         {
             ChangeState(DinoState.CHASING);
-            isAnimating = true;
             animator.ResetTrigger(_aniCall);
         }
     }
