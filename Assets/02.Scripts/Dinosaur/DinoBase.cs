@@ -358,6 +358,14 @@ public class DinoBase : MonoBehaviour
         
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.tag == "DinoAttack")
+        {
+
+        }
+    }
+
     public void ChangeState(DinoState newState)
     {
         ResetAnimationTrigger();
