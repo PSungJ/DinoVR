@@ -87,7 +87,6 @@ public class DinoStatus : MonoBehaviour
             Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * detactRange, awareness, LayerMask.GetMask("Dinosaur"));
             foreach (Collider col in dinos)
             {
-                Debug.Log(col.name);
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
                 if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
                 {
