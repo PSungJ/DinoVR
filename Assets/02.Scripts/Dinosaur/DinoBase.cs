@@ -71,7 +71,7 @@ public class DinoBase : MonoBehaviour
                 ChangeState(DinoState.SEARCHING);   // 경계 태세 진입
             }
         }
-        else if (status.target != null && isSearching == false)
+        else if (status.target != null && isSearching == false && status.meat == null)
         {
             isSearching = true;
             ChangeState(DinoState.SEARCHING);
@@ -160,7 +160,7 @@ public class DinoBase : MonoBehaviour
                 else
                 {
                     Vector3 dir = (status.meat.position - transform.position).normalized;
-                    agent.SetDestination(status.meat.position - dir * (status.attackRange / 2f));
+                    agent.SetDestination(status.meat.position - dir * (status.attackRange / 3f));
                     ChangeState(DinoState.ROAMING);
                 }
             }
@@ -227,7 +227,7 @@ public class DinoBase : MonoBehaviour
 
         if (!agent.hasPath)     // 도망 지점에 도착하면 경계 상태로 전환
         {
-            status.fearOrigin = null;
+            ResetTarget();
             status.fearCurrent = 50f;
             ChangeState(DinoState.SEARCHING);
         }
@@ -259,10 +259,10 @@ public class DinoBase : MonoBehaviour
                 float dis = (status.fearOrigin.position - transform.position).magnitude;
                 if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
                 {
-                    RotateSmoothly(status.fearOrigin.position - transform.position);
+                    RotateSmoothly(status.fearOrigin.position - transform.position, true);
                     if (status.IsAfraid())
                         StartFleeing();
-                    else if (status.fearCurrent >= status.fearThreshold*0.2f)
+                    else if (status.fearCurrent >= status.fearThreshold*0.1f)
                         StartFleeing();
                 }
                 else if (dis > status.attackRange && Time.time - lastRoarTime >= 15f)  // 거리가 가깝지만 공격사거리 밖이라면
@@ -284,26 +284,26 @@ public class DinoBase : MonoBehaviour
         }
         else    // 육식이면
         {
-            if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
-            {
-                if (status.target.GetComponent<DinoStatus>().isDie)
-                {
-                    status.target = null;
-                    ChangeState(DinoState.IDLE);
-                    return;
-                }
-                float dis = (status.target.position - transform.position).magnitude;
-                if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
-                {
-                    RotateSmoothly(status.target.position - transform.position);
-                    currentAttackTime += Time.deltaTime;
-                    if (currentAttackTime >= toAttackTime)
-                    {
-                        currentAttackTime = 0f;
-                        ChangeState(DinoState.CHASING);
-                    }
-                }
-            }
+            //if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
+            //{
+            //    if (status.target.GetComponent<DinoStatus>().isDie)
+            //    {
+            //        status.target = null;
+            //        ChangeState(DinoState.IDLE);
+            //        return;
+            //    }
+            //    float dis = (status.target.position - transform.position).magnitude;
+            //    if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            //    {
+            //        RotateSmoothly(status.target.position - transform.position);
+            //        currentAttackTime += Time.deltaTime;
+            //        if (currentAttackTime >= toAttackTime)
+            //        {
+            //            currentAttackTime = 0f;
+            //            ChangeState(DinoState.CHASING);
+            //        }
+            //    }
+            //}
         }
     }
 
