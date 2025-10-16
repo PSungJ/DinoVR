@@ -1,38 +1,63 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // TextMeshPro¸¦ »ç¿ëÇÑ´Ù°í °¡Á¤
+using TMPro;
+using UnityEngine.XR.Interaction.Toolkit; // XRGrabInteractableì„ ì‚¬ìš©í•˜ê¸° ìœ„í•´ ì¶”ê°€
 
 public class SlotUIUpdater : MonoBehaviour
 {
-    // [Inspector¿¡¼­ ¿¬°á]
+    // [Inspectorì—ì„œ ì—°ê²°]
     [Header("UI Elements")]
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI itemAmountText;
 
-    // ÀÎº¥Åä¸® Å¬·¡½º¿¡¼­ È£ÃâµÉ ÇÔ¼ö (¾ÆÀÌÅÛ µ¥ÀÌÅÍ¸¦ ¹Ş¾Æ UI¸¦ °»½Å)
+    [Header("Interaction")]
+    // ğŸ”¥ [í•µì‹¬ ì¶”ê°€] ê° ìŠ¬ë¡¯ì˜ XRGrabInteractable ì»´í¬ë„ŒíŠ¸ë¥¼ Inspectorì—ì„œ ì—°ê²°í•´ì•¼ í•©ë‹ˆë‹¤.
+    [SerializeField] private XRGrabInteractable grabInteractable;
+
+
+    /// <summary>
+    /// ì•„ì´í…œ ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ìŠ¬ë¡¯ UIë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤.
+    /// </summary>
     public void UpdateSlotUI(ItemBaseSO itemData, int stackSize)
     {
-        // 1. ½½·ÔÀÌ ºñ¾îÀÖÀ» ¶§
-        if (itemData == null || stackSize <= 0)
+        // ì•„ì´í…œì´ ìœ íš¨í•œì§€ íŒë‹¨
+        bool hasItem = itemData != null && stackSize > 0;
+
+        // 1. ì•„ì´ì½˜ GameObject í™œì„±í™”/ë¹„í™œì„±í™” (ì´ë¯¸ì§€ í‘œì‹œ ë° ì”ìƒ ë¬¸ì œ í•´ê²°)
+        if (itemIcon != null)
         {
-            itemIcon.enabled = false;
-            itemAmountText.text = "";
-            return;
+            // ì»´í¬ë„ŒíŠ¸ enabled ëŒ€ì‹  GameObject ìì²´ë¥¼ ì¼œê³  ë•ë‹ˆë‹¤.
+            itemIcon.gameObject.SetActive(hasItem);
         }
 
-        // 2. ½½·Ô¿¡ ¾ÆÀÌÅÛÀÌ ÀÖÀ» ¶§
-        itemIcon.enabled = true;
-
-        // ¾ÆÀÌÅÛ ¾ÆÀÌÄÜ ¼³Á¤
-        if (itemIcon != null && itemData.itemIcon != null)
+        // ğŸ”¥ 2. Grab Interactable í™œì„±í™”/ë¹„í™œì„±í™” (í€µìŠ¬ë¡¯ Grab ë¬¸ì œ í•´ê²°)
+        // ì•„ì´í…œì´ ìˆì„ ë•Œë§Œ ì¡ì„ ìˆ˜ ìˆë„ë¡ í•©ë‹ˆë‹¤.
+        if (grabInteractable != null)
         {
-            itemIcon.sprite = itemData.itemIcon;
+            grabInteractable.enabled = hasItem;
         }
 
-        // ¾ÆÀÌÅÛ °³¼ö ÅØ½ºÆ® ¼³Á¤
-        if (itemAmountText != null)
+        if (hasItem)
         {
-            itemAmountText.text = stackSize > 1 ? stackSize.ToString() : "";
+            // ì•„ì´í…œ ì•„ì´ì½˜ ì„¤ì •
+            if (itemIcon != null && itemData.itemIcon != null)
+            {
+                itemIcon.sprite = itemData.itemIcon;
+            }
+
+            // ì•„ì´í…œ ê°œìˆ˜ í…ìŠ¤íŠ¸ ì„¤ì •
+            if (itemAmountText != null)
+            {
+                itemAmountText.text = stackSize > 1 ? stackSize.ToString() : "";
+            }
+        }
+        else
+        {
+            // ìŠ¬ë¡¯ì´ ë¹„ì–´ìˆì„ ë•Œ
+            if (itemAmountText != null)
+            {
+                itemAmountText.text = "";
+            }
         }
     }
 }
