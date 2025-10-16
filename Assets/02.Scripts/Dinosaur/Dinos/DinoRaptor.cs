@@ -11,7 +11,15 @@ public class DinoRaptor : DinoBase
         if (agent.hasPath)
             agent.ResetPath();
 
-        if (status.fearCurrent == 0 && status.target != null) // 공포가 0 이라면 == 사냥
+        if(status.hungerCurrent > status.hungerMax / 2f)
+        {
+            if (status.target != null)
+            {
+                status.AddFear(1f, status.target);
+            }
+        }
+
+        if (status.fearCurrent <= 0 && status.target != null) // 공포가 0 이라면 == 사냥
         {
             if (!IsLive(status.target))
             {
@@ -34,10 +42,12 @@ public class DinoRaptor : DinoBase
         else if (status.fearOrigin != null)
         {
             float dis = (status.fearOrigin.position - transform.position).magnitude;
-            if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
                 RotateSmoothly(status.fearOrigin.position - transform.position);
                 if (status.IsAfraid())
+                    StartFleeing();
+                else if (status.fearCurrent >= status.fearThreshold * 0.2f)
                     StartFleeing();
             }
             else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
@@ -45,7 +55,7 @@ public class DinoRaptor : DinoBase
                 ChangeState(DinoState.ROAR);
             }
         }
-        else
+        else if (status.fearCurrent <= 0)
         {
             ChangeState(DinoState.IDLE);
         }
