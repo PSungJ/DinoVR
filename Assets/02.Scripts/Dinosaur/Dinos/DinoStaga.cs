@@ -42,6 +42,11 @@ public class DinoStaga : DinoBase
 
     public override void Attack()
     {
+        if (!IsLive(status.fearOrigin))
+        {
+            ResetTarget();
+            return;
+        }
         Vector3 toTarget = status.fearOrigin.position - transform.position;
         float dot = Vector3.Dot(transform.forward, toTarget.normalized);
         if (dot > 0f)   // 포식자가 내 앞에 있음
@@ -63,6 +68,10 @@ public class DinoStaga : DinoBase
             {
                 if (status.IsAfraid())
                     StartFleeing();
+                else
+                {
+                    ResetTarget();
+                }
             }
         }
     }
