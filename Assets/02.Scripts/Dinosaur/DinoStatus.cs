@@ -49,8 +49,8 @@ public class DinoStatus : MonoBehaviour
     public float hungerCurrent;
     public float thirstCurrent;
     public bool isDie = false;
-    public List<Transform> targetList;   // 사냥감 후보 리스트
-    public List<Transform> meatList;   // 사냥감 후보 리스트
+    public List<Transform> targetList = new();   // 사냥감 후보 리스트
+    public List<Transform> meatList = new();   // 사냥감 후보 리스트
     public Transform target;            // 가장 가까운 사냥감
     public Transform meat;              // 가장 가까운 고기
     public Transform fearOrigin;        // 공포 원인
@@ -92,7 +92,8 @@ public class DinoStatus : MonoBehaviour
             foreach (Collider col in dinos)
             {
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
-                if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
+                DinoStatus stat = col.GetComponent<DinoStatus>();
+                if (stat != null)
                 {
                     if (stat.threat <= threat || stat.isDie)
                     {
@@ -103,7 +104,6 @@ public class DinoStatus : MonoBehaviour
                             else
                                 targetList.Add(col.transform);
                         }
-
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
                     AddFear(stat.threat, col.transform);
