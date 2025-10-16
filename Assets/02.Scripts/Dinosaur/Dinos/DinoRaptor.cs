@@ -55,6 +55,8 @@ public class DinoRaptor : DinoBase
 
     public override void Chasing()
     {
+        agent.speed = status.runSpeed;
+
         if (status.target == null)
         {
             ChangeState(DinoState.IDLE);
@@ -62,18 +64,17 @@ public class DinoRaptor : DinoBase
         }
         if (Time.time - lastAttackTime > 5f)        // 마지막 공격으로 부터 5초가 넘었다면 추격 후 공격
         {
-            agent.destination = status.target.position;
-            agent.speed = status.runSpeed;
             if (Vector3.Distance(status.target.position, transform.position) <= status.attackRange)
             {
-                agent.destination = transform.position;
+                agent.SetDestination(transform.position);
                 ChangeState(DinoState.ATTACKING);
             }
+            else
+                agent.SetDestination(status.target.position);
         }
         else if (!agent.hasPath)                    // 공격 후 5초간 랜덤 좌표 배회
         {
             agent.destination = GetRandomPoint(transform.position,20f);
-            agent.speed = status.runSpeed;
         }
     }
 
@@ -112,7 +113,6 @@ public class DinoRaptor : DinoBase
     public override void Call()
     {
         animator.SetTrigger(_aniCall);
-        agent.isStopped = true;
         if (status.target == null)
         {
             ChangeState(DinoState.IDLE);
