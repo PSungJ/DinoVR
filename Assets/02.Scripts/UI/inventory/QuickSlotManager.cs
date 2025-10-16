@@ -1,84 +1,100 @@
-using UnityEngine;
+ï»¿using UnityEngine;
+using System;
+using UnityEngine.XR.Interaction.Toolkit;
 
-// [Âü°í] ItemBaseSO, InventorySlot µîÀÇ Á¤ÀÇ°¡ ÇÊ¿äÇÕ´Ï´Ù.
+// [ì°¸ê³ ] ItemBaseSO, InventorySlot ë“±ì˜ ì •ì˜ê°€ í•„ìš”í•©ë‹ˆë‹¤.
 
 public class QuickSlotManager : MonoBehaviour
 {
-    // --- [ÇÊ¿äÇÑ ÇÊµå (Inventory.cs¿ÍÀÇ ¿¬µ¿À» À§ÇØ)] ---
-    // Inventory.csÀÇ capacity ÀÌÈÄ¿¡ QuickSlotÀÌ ÀÌ¾î¼­ ºÙ¾î ÀÖ´Ù°í °¡Á¤ÇÕ´Ï´Ù.
+    // --- [í•„ìš”í•œ í•„ë“œ (Inventory.csì™€ì˜ ì—°ë™ì„ ìœ„í•´)] ---
     [Header("QuickSlot Setup")]
-    // [Áß¿ä] InventoryManager¿Í QuickSlotManager°¡ InventorySlot ÀÎµ¦½º¸¦ °øÀ¯ÇÑ´Ù°í °¡Á¤ÇÒ ¶§,
-    // Äü½½·ÔÀÌ ½ÃÀÛÇÏ´Â ÀÎµ¦½º (¿¹: ÀÎº¥Åä¸® 30Ä­ ÀÌÈÄ 30ºÎÅÍ ½ÃÀÛ)
     [SerializeField] private int quickSlotStartIndex = 30;
-    [SerializeField] private int quickSlotCount = 5;      // Äü½½·ÔÀÇ °³¼ö
+    [SerializeField] private int quickSlotCount = 5;      // í€µìŠ¬ë¡¯ì˜ ê°œìˆ˜
 
-    // Äü½½·ÔÀÇ ½ÇÁ¦ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ¸¦ ÀúÀåÇÏ´Â ¹è¿­
+    // í€µìŠ¬ë¡¯ì˜ ì‹¤ì œ ì•„ì´í…œ ë°ì´í„°ë¥¼ ì €ì¥í•˜ëŠ” ë°°ì—´
     public InventorySlot[] quickSlots;
 
     [Header("UI References")]
-    [SerializeField] private SlotUIUpdater[] quickSlotUIs; // Äü½½·Ô UI¸¦ ¾÷µ¥ÀÌÆ®ÇÏ±â À§ÇÑ ¹è¿­
+    [SerializeField] private SlotUIUpdater[] quickSlotUIs; // í€µìŠ¬ë¡¯ UIë¥¼ ì—…ë°ì´íŠ¸í•˜ê¸° ìœ„í•œ ë°°ì—´
 
 
     private void Awake()
     {
-        // quickSlots ¹è¿­ ÃÊ±âÈ­ (Äü½½·Ô °³¼ö¸¸Å­)
         quickSlots = new InventorySlot[quickSlotCount];
         for (int i = 0; i < quickSlotCount; i++)
         {
+            // InventorySlot.Emptyë¡œ ì´ˆê¸°í™”
             quickSlots[i] = InventorySlot.Empty;
         }
-
-        // [Âü°í] QuickSlotManager ½Ì±ÛÅæ ¶Ç´Â ÃÊ±âÈ­ ·ÎÁ÷ÀÌ ÇÊ¿äÇÒ ¼ö ÀÖ½À´Ï´Ù.
     }
 
     // ----------------------------------------------------
-    // [Inventory.cs ¿¡¼­ È£ÃâµÇ´Â ÇÊ¼ö ÇÔ¼ö]
+    // [Inventory.cs ì—ì„œ í˜¸ì¶œë˜ëŠ” í•„ìˆ˜ í•¨ìˆ˜]
     // ----------------------------------------------------
 
     /// <summary>
-    /// ÀÎµ¦½º°¡ QuickSlot ¿µ¿ª¿¡ ¼ÓÇÏ´ÂÁö È®ÀÎÇÕ´Ï´Ù. (Inventory.cs¿¡¼­ È£ÃâµÊ)
+    /// ì¸ë±ìŠ¤ê°€ QuickSlot ì˜ì—­ì— ì†í•˜ëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤.
     /// </summary>
-    /// <param name="index">InventorySlot.slots[] ¹è¿­ ÀÎµ¦½º (°¡»ó ÀÎµ¦½º)</param>
-    /// <returns>QuickSlot ¹üÀ§¿¡ ¼ÓÇÏ¸é true</returns>
     public bool IsQuickSlotIndex(int index)
     {
-        // ÀÎº¥Åä¸®ÀÇ °¡»ó ÀÎµ¦½º°¡ Äü½½·ÔÀÇ ½ÃÀÛ ÀÎµ¦½º¿Í ³¡ ÀÎµ¦½º »çÀÌ¿¡ ÀÖ´ÂÁö È®ÀÎ
         return index >= quickSlotStartIndex && index < quickSlotStartIndex + quickSlotCount;
     }
 
     /// <summary>
-    /// ÀÎº¥Åä¸® ½½·Ô°ú Äü½½·Ô °£ÀÇ ¾ÆÀÌÅÛ ±³È¯À» Ã³¸®ÇÕ´Ï´Ù. (Inventory.cs¿¡¼­ À§ÀÓ¹ŞÀ½)
+    /// ğŸ”¥ [í•µì‹¬ ì¶”ê°€] í€µìŠ¬ë¡¯ ì¸ë±ìŠ¤ì— ì•„ì´í…œì´ ì—†ëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤. (Inventory.csì—ì„œ í˜¸ì¶œë¨)
+    /// </summary>
+    public bool IsQuickSlotEmpty(int index)
+    {
+        if (!IsQuickSlotIndex(index))
+        {
+            // í€µìŠ¬ë¡¯ ì¸ë±ìŠ¤ê°€ ì•„ë‹˜
+            return true;
+        }
+
+        // ê°€ìƒ ì¸ë±ìŠ¤ë¥¼ ë‚´ë¶€ ë°°ì—´ ì¸ë±ìŠ¤ (0ë¶€í„° ì‹œì‘)ë¡œ ë³€í™˜
+        int internalIndex = index - quickSlotStartIndex;
+
+        // ë‚´ë¶€ ë°°ì—´ì˜ ë°ì´í„° í™•ì¸
+        if (internalIndex >= 0 && internalIndex < quickSlotCount)
+        {
+            // InventorySlot.IsEmpty ì†ì„± ì‚¬ìš©
+            return quickSlots[internalIndex].IsEmpty;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯ê³¼ í€µìŠ¬ë¡¯ ê°„ì˜ ì•„ì´í…œ êµí™˜ì„ ì²˜ë¦¬í•©ë‹ˆë‹¤.
     /// </summary>
     public void HandleInventorySwap(int indexA, int indexB)
     {
+        // Inventory.Instanceê°€ staticìœ¼ë¡œ ì ‘ê·¼ ê°€ëŠ¥í•˜ë‹¤ê³  ê°€ì •
         Inventory inventory = Inventory.Instance;
         if (inventory == null) return;
 
-        // 1. A¿Í B Áß ¾î´À ÂÊÀÌ QuickSlotÀÌ°í InventorySlotÀÎÁö ÆÇº°
+        // 1. Aì™€ B ì¤‘ ì–´ëŠ ìª½ì´ QuickSlotì´ê³  InventorySlotì¸ì§€ íŒë³„
         bool aIsQuick = IsQuickSlotIndex(indexA);
         bool bIsQuick = IsQuickSlotIndex(indexB);
 
-        // 2. ÀÎµ¦½º¸¦ ½ÇÁ¦ ¹è¿­ ÀÎµ¦½º·Î º¯È¯ (Äü½½·ÔÀº 0ºÎÅÍ ½ÃÀÛÇÏµµ·Ï º¯È¯)
+        // 2. ì¸ë±ìŠ¤ë¥¼ ì‹¤ì œ ë°°ì—´ ì¸ë±ìŠ¤ë¡œ ë³€í™˜ 
         int aInternalIndex = aIsQuick ? indexA - quickSlotStartIndex : indexA;
         int bInternalIndex = bIsQuick ? indexB - quickSlotStartIndex : indexB;
 
-        // 3. ÇöÀç µ¥ÀÌÅÍ °¡Á®¿À±â
+        // 3. í˜„ì¬ ë°ì´í„° ê°€ì ¸ì˜¤ê¸° 
         InventorySlot slotA_Data = aIsQuick ? quickSlots[aInternalIndex] : inventory.slots[aInternalIndex];
         InventorySlot slotB_Data = bIsQuick ? quickSlots[bInternalIndex] : inventory.slots[bInternalIndex];
 
-        // 4. µ¥ÀÌÅÍ ±³È¯
-        // A À§Ä¡¿¡ B µ¥ÀÌÅÍ¸¦ µ¤¾î¾º¿ì±â
+        // 4. ë°ì´í„° êµí™˜
         if (aIsQuick)
         {
             quickSlots[aInternalIndex] = slotB_Data;
         }
         else
         {
-            // inventory.slots ¹è¿­Àº ÀÎº¥Åä¸® ÃÖ´ë Å©±â(capacity)±îÁö¸¸ Á¢±ÙÇØ¾ß ÇÔ
             inventory.slots[aInternalIndex] = slotB_Data;
         }
 
-        // B À§Ä¡¿¡ A µ¥ÀÌÅÍ¸¦ µ¤¾î¾º¿ì±â
         if (bIsQuick)
         {
             quickSlots[bInternalIndex] = slotA_Data;
@@ -90,35 +106,36 @@ public class QuickSlotManager : MonoBehaviour
 
         Debug.Log($"[QuickSlotManager] Swap Executed: Inventory/QuickSlot Indices ({indexA} <-> {indexB})");
 
-        // 5. UI °»½Å
-        inventory.RefreshAllInventoryUI(); // Inventory UI °»½Å (Inventory.cs¿¡ public ÇÔ¼ö°¡ ÀÖ´Ù°í °¡Á¤)
-        RefreshAllQuickSlotUI();           // QuickSlot UI °»½Å
+        // 5. UI ê°±ì‹  (ì”ìƒ ë¬¸ì œ í•´ê²°)
+        if (!aIsQuick || !bIsQuick)
+        {
+            // ì¸ë²¤í† ë¦¬ ë°ì´í„°ê°€ ë³€ê²½ë˜ì—ˆì„ ê²½ìš° ì¸ë²¤í† ë¦¬ ì „ì²´ë¥¼ ê°±ì‹ 
+            inventory.RefreshAllInventoryUI();
+        }
+
+        RefreshAllQuickSlotUI();
     }
 
     // ----------------------------------------------------
-    // [UI °»½Å ·ÎÁ÷]
+    // [UI ê°±ì‹  ë¡œì§]
     // ----------------------------------------------------
 
     /// <summary>
-    /// QuickSlot UI¸¦ ÀüÃ¼ °»½ÅÇÕ´Ï´Ù.
+    /// QuickSlot UIë¥¼ ì „ì²´ ê°±ì‹ í•©ë‹ˆë‹¤.
     /// </summary>
     private void RefreshAllQuickSlotUI()
     {
         if (quickSlotUIs == null) return;
 
-        for (int i = 0; i < quickSlotCount; i++)
+        // ë°°ì—´ ê¸¸ì´ ì•ˆì „ ì²´í¬
+        int updateCount = Mathf.Min(quickSlotCount, quickSlotUIs.Length);
+
+        for (int i = 0; i < updateCount; i++)
         {
-            if (i < quickSlotUIs.Length && quickSlotUIs[i] != null)
+            if (quickSlotUIs[i] != null)
             {
                 quickSlotUIs[i].UpdateSlotUI(quickSlots[i].itemData, quickSlots[i].stackSize);
             }
         }
-        // [Âü°í] quickSlotUIs ¹è¿­ÀÇ Å©±â°¡ quickSlotCount¿Í ÀÏÄ¡ÇØ¾ß ÇÕ´Ï´Ù.
     }
-
-    // ----------------------------------------------------
-    // [QuickSlot °íÀ¯ ·ÎÁ÷]
-    // ----------------------------------------------------
-
-    // [TODO] Äü½½·Ô ¾ÆÀÌÅÛ »ç¿ë (¿¹: ¼ıÀÚ Å° ÀÔ·Â ½Ã) ·ÎÁ÷ µîÀÌ ¿©±â¿¡ ±¸ÇöµË´Ï´Ù.
 }

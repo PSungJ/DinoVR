@@ -67,12 +67,15 @@ public class VRSlotInteraction : MonoBehaviour
         }
     }
 
-    // --- (OnHoverStart, OnHoverEnd 함수 유지) ---
+    // --- (하이라이트 로직: 알파 0.5f로 수정) ---
     public void OnHoverStart(HoverEnterEventArgs args)
     {
         if (grabbedIndex != -1 && highlightImage != null)
         {
-            highlightImage.color = hoverHighlightColor;
+            // Hover Highlight 색상(RGB)을 유지하고 알파만 0.5로 설정
+            Color color = hoverHighlightColor;
+            color.a = 0.5f;
+            highlightImage.color = color;
         }
     }
 
@@ -80,19 +83,22 @@ public class VRSlotInteraction : MonoBehaviour
     {
         if (highlightImage != null)
         {
-            highlightImage.color = defaultHighlightColor;
+            // Default Highlight 색상(Color.clear)을 유지하고 알파만 0.0으로 설정
+            Color color = defaultHighlightColor;
+            color.a = 0.0f;
+            highlightImage.color = color;
         }
     }
     // ---
 
-    // Grab 시작 시 호출 (빈 슬롯 방지 로직 - 이전 버전의 강제 취소 로직 유지)
+    // Grab 시작 시 호출 (빈 슬롯 방지 로직)
     public void OnSelectStart(SelectEnterEventArgs args)
     {
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
             Debug.LogWarning($"[GRAB ABORTED] Slot {slotIndex} is empty. Cannot grab.");
 
-            // Grab 강제 취소 (이전 로직 유지)
+            // Grab 강제 취소
             if (grabInteractable != null)
             {
                 grabInteractable.enabled = false;
@@ -122,7 +128,6 @@ public class VRSlotInteraction : MonoBehaviour
 
     private void OnSelectStartedOverrideParenting(SelectEnterEventArgs args)
     {
-        // 빈 슬롯이면 Parent Override 복원 시도도 건너뜁니다.
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex)) return;
 
         if (transform.parent != originalParent)
@@ -151,7 +156,7 @@ public class VRSlotInteraction : MonoBehaviour
         // 1. Swap Target 찾기 로직
         int targetIndex = -1;
 
-        // V------------------ [최종 수정: GetValidTargets 기반으로 안정화된 로직] ------------------V
+        // V------------------ [Swap Target 찾기: GetValidTargets 기반으로 안정화] ------------------V
         if (args.interactorObject is IXRInteractor interactor)
         {
             // Interactor가 현재 Hover하고 있는 모든 유효한 Interactable 대상을 가져옵니다.
