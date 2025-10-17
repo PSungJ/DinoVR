@@ -11,7 +11,7 @@ public class SlotUIUpdater : MonoBehaviour
     [SerializeField] private TextMeshProUGUI itemAmountText;
 
     [Header("Interaction")]
-    // 🔥 [핵심 추가] 각 슬롯의 XRGrabInteractable 컴포넌트를 Inspector에서 연결해야 합니다.
+    //  [핵심 추가] 각 슬롯의 XRGrabInteractable 컴포넌트를 Inspector에서 연결해야 합니다.
     [SerializeField] private XRGrabInteractable grabInteractable;
 
 
