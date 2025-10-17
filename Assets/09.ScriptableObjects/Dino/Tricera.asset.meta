@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/09.ScriptableObjects/Dino/Tricera.asset.meta
 guid: ec6a34b94d9ab15408eaf1e4d3f7374c
+========
+guid: 94b94559f818db2418195ea37b570b0a
+>>>>>>>> 25f1e44 (1017_파밍 건물 및 파밍 오브젝트 추가):Assets/Settings/Balanced_PipelineAsset_ForwardRenderer.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000

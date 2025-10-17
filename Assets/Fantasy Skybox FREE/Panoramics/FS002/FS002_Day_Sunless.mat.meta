@@ -1,8 +1,12 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Fantasy Skybox FREE/Panoramics/FS002/FS002_Day_Sunless.mat.meta
 guid: 67950864b84c5db4f9eee7ca51c85571
+========
+guid: f3a4fc37985dd274bb359bdfade8159f
+>>>>>>>> 25f1e44 (1017_파밍 건물 및 파밍 오브젝트 추가):Assets/SciFi Warehouse Kit/Art/Materials/Barrel Mat.mat.meta
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 0
+  mainObjectFileID: 2100000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

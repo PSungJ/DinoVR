@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/09.ScriptableObjects/Dino/Iguanodon.asset.meta
 guid: 33355f7c522490245b472c9f9ab891ac
+========
+guid: 450ba6f23eaafc04fa200fe60daa899a
+>>>>>>>> 25f1e44 (1017_파밍 건물 및 파밍 오브젝트 추가):Assets/Settings/Balanced_PipelineAsset.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000

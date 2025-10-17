@@ -1,8 +1,12 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Fantasy Skybox FREE/Panoramics/FS002/FS002_Day.mat.meta
 guid: 9ca22510633fbfd4399f1704cd9d5c72
+========
+guid: d2466ce830d431045981fb0da03352f3
+>>>>>>>> 25f1e44 (1017_파밍 건물 및 파밍 오브젝트 추가):Assets/03.Models/Structure/tree-branch/source/branch.mat.meta
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 0
+  mainObjectFileID: 2100000
   userData: 
   assetBundleName: 
   assetBundleVariant: 
