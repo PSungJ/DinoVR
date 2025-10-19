@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.UI;
-using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class VRSlotInteraction : MonoBehaviour
 {
@@ -17,16 +16,20 @@ public class VRSlotInteraction : MonoBehaviour
     private Collider slotCollider;
     private SlotUIUpdater uiUpdater;
 
+    // Layer Switching 필드
+    private int originalLayer;
+    private int grabbedLayer;
+
     [Header("Highlight Settings")]
     [SerializeField] private Image highlightImage;
     [SerializeField] private Color defaultHighlightColor = Color.clear;
-    [SerializeField] private Color hoverHighlightColor = Color.yellow; // Grab 중 Hover 색상
+    [SerializeField] private Color hoverHighlightColor = Color.yellow; // 플래시 색상으로 사용
     [SerializeField] private Color defaultHoverColor = Color.cyan; // 일반 포인팅 시 Hover 색상
 
     // Grabbed Index (출발지)
     private static int grabbedIndex = -1;
 
-    // ⭐ Hover 기반 스왑 타겟으로 사용
+    // Hover 기반 스왑 타겟으로 사용 (XR 이벤트에만 의존)
     private static VRSlotInteraction lastHoveredSlot = null;
 
     // [위치 복원용 필드]
@@ -34,10 +37,10 @@ public class VRSlotInteraction : MonoBehaviour
     private Vector3 initialLocalPosition;
     private Quaternion initialLocalRotation;
 
-    // 하이라이트/인스턴스 클린업을 위한 Static Dictionary 추가
+    // Static Dictionary: 모든 슬롯 인스턴스를 추적
     private static Dictionary<int, VRSlotInteraction> allSlotInteractions = new Dictionary<int, VRSlotInteraction>();
 
-    // [XRIT 3.x 대응 필드] Interactable의 초기 Interaction Layer Mask를 저장
+    // [XRIT Layer Mask 저장]
     private InteractionLayerMask originalInteractionLayers;
 
     void Awake()
@@ -59,13 +62,22 @@ public class VRSlotInteraction : MonoBehaviour
         initialLocalPosition = transform.localPosition;
         initialLocalRotation = transform.localRotation;
 
-        // 3. XRIT 3.x 대응: 원래 Interaction Layer Mask 저장 (interactionLayers 사용)
+        // 3. XRIT Layer Mask 저장
         if (grabInteractable != null)
         {
             originalInteractionLayers = grabInteractable.interactionLayers;
         }
 
-        // 4. XRGrabInteractable 이벤트 연결
+        // 4. 레이어 ID 저장 및 원래 레이어 저장
+        originalLayer = gameObject.layer;
+        grabbedLayer = LayerMask.NameToLayer("Grabbed");
+
+        if (grabbedLayer == -1)
+        {
+            Debug.LogError("Error: 'Grabbed' Layer not found! Please create it in Unity Layers.");
+        }
+
+        // 5. XRGrabInteractable 이벤트 연결
         grabInteractable.selectEntered.AddListener(OnSelectStartedOverrideParenting);
         grabInteractable.selectEntered.AddListener(OnSelectStart);
         grabInteractable.selectExited.AddListener(OnSelectEndWithDelay);
@@ -74,14 +86,14 @@ public class VRSlotInteraction : MonoBehaviour
         grabInteractable.activated.AddListener(OnActivatedForUse);
 
         // 하이라이트 초기화
-        ClearHighlight();
+        ClearHighlightVisual();
+        lastHoveredSlot = null;
 
-        // 5. 인스턴스 등록
+        // 6. 인스턴스 등록
         if (slotIndex != -1)
         {
             if (allSlotInteractions.ContainsKey(slotIndex))
             {
-                Debug.LogWarning($"Duplicate Slot Index detected: {slotIndex}");
                 allSlotInteractions[slotIndex] = this;
             }
             else
@@ -90,65 +102,104 @@ public class VRSlotInteraction : MonoBehaviour
             }
         }
 
-        // 시작 시 콜라이더는 일반 콜라이더(Is Trigger = false)여야 합니다. (유지)
+        // 7. 콜라이더 초기 설정
         if (slotCollider != null)
         {
             slotCollider.isTrigger = false;
         }
     }
 
-    // --- (하이라이트 로직) ---
+    // [재귀 함수] 오브젝트와 모든 자식의 Layer를 변경합니다.
+    private static void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null) return;
+
+        obj.layer = newLayer;
+
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, newLayer);
+        }
+    }
+
+    // ⭐ [추가] 모든 슬롯의 XRInteractable 상태를 강제로 활성화합니다.
+    public static void RefreshAllInteractables()
+    {
+        foreach (var slot in allSlotInteractions.Values)
+        {
+            if (slot != null && slot.grabInteractable != null)
+            {
+                // 이미 RestoreSlotVisualAndPhysics 내부에 포함되어 있지만, 
+                // 전체 복원을 위해 안전하게 Restore 함수를 호출합니다.
+                slot.RestoreSlotVisualAndPhysics();
+            }
+        }
+    }
+
+    // --- (Highlight/Hover 로직) ---
     public void OnHoverStart(HoverEnterEventArgs args)
     {
-        Debug.Log($"[DEBUG HOVER 1] OnHoverStart Called on Slot {this.slotIndex} | Grabbed Index: {grabbedIndex}");
-
-        if (highlightImage != null)
+        if (grabbedIndex == -1)
         {
-            // 현재 잡고 있는 슬롯은 하이라이트 하지 않습니다.
-            if (this.slotIndex != grabbedIndex)
+            // 일반 Hover (Grab 전): 하이라이트 켜기
+            ApplyDefaultHoverHighlight();
+        }
+        else if (this.slotIndex != grabbedIndex)
+        {
+            // Grab 중 Hover (Swap Target): 비주얼 없이 타겟 설정 로직만 유지
+
+            if (lastHoveredSlot != null && lastHoveredSlot != this)
             {
-                // 이전에 하이라이트된 슬롯이 있고 현재 슬롯과 다르다면 클리어 (단일 하이라이트 강제)
-                if (lastHoveredSlot != null && lastHoveredSlot != this)
-                {
-                    lastHoveredSlot.ClearHighlight();
-                }
-
-                Color targetColor;
-
-                if (grabbedIndex != -1)
-                {
-                    targetColor = hoverHighlightColor;
-                }
-                else
-                {
-                    targetColor = defaultHoverColor;
-                }
-
-                targetColor.a = 1.0f;
-                highlightImage.color = targetColor;
-
-                // ⭐ 마지막으로 Hover된 슬롯을 추적 (Swap Target으로 사용될 후보)
-                lastHoveredSlot = this;
+                lastHoveredSlot.ClearHighlightVisual();
             }
-            else
-            {
-                Debug.Log($"[DEBUG HOVER 3] Highlight Blocked: Slot {this.slotIndex} is the Grabbed Slot.");
-            }
+            lastHoveredSlot = this;
         }
     }
 
     public void OnHoverEnd(HoverExitEventArgs args)
     {
-        if (lastHoveredSlot == this)
+        if (grabbedIndex == -1)
         {
-            ClearHighlight();
-            // Ray가 벗어날 때 lastHoveredSlot을 바로 null로 만들지 않습니다.
-            // Select End가 발생할 때까지 마지막 유효 Hover를 유지합니다.
-            // lastHoveredSlot = null; // 이 줄을 주석 처리하여 유지
+            // 일반 Hover (Grab 전): 하이라이트 끄기
+            ClearHighlightVisual();
+        }
+        else if (lastHoveredSlot == this)
+        {
+            // Grab 중 Hover 종료: 타겟 해제
+            lastHoveredSlot = null;
         }
     }
 
-    public void ClearHighlight()
+    // 일반 Hover 시 하이라이트 적용 함수
+    public void ApplyDefaultHoverHighlight()
+    {
+        if (highlightImage != null)
+        {
+            Color targetColor = defaultHoverColor;
+            targetColor.a = 1.0f;
+            highlightImage.color = targetColor;
+        }
+    }
+
+    // 드롭 플래시 하이라이트 적용 함수 (Post-drop Flash에서 사용)
+    public void ApplyFlashHighlight()
+    {
+        if (highlightImage != null)
+        {
+            Color targetColor = hoverHighlightColor;
+            targetColor.a = 1.0f;
+            highlightImage.color = targetColor;
+        }
+        // 플래시 시작 시 슬롯 이미지의 투명도도 복원 (Grab 시 0.5로 설정되었으므로)
+        if (slotImage != null)
+        {
+            Color color = slotImage.color;
+            color.a = 1.0f;
+            slotImage.color = color;
+        }
+    }
+
+    public void ClearHighlightVisual()
     {
         if (highlightImage != null)
         {
@@ -156,39 +207,40 @@ public class VRSlotInteraction : MonoBehaviour
             color.a = 0.0f;
             highlightImage.color = color;
         }
-        if (lastHoveredSlot == this)
-        {
-            lastHoveredSlot = null; // ClearHighlight이 호출될 때만 안전하게 해제
-        }
     }
-    // ---
 
-    // Grab 시작 시 호출 (빈 슬롯 방지 로직 + Interaction Layer 변경)
+    // 드롭 시 0.1초 동안 하이라이트 플래시
+    private IEnumerator FlashHighlight(float duration = 0.1f)
+    {
+        ApplyFlashHighlight(); // 하이라이트 켜고 슬롯 투명도 복원
+        yield return new WaitForSeconds(duration);
+        ClearHighlightVisual(); // 하이라이트 끄기
+    }
+
+    // --- (Select/Grab 로직) ---
     public void OnSelectStart(SelectEnterEventArgs args)
     {
+        // 슬롯이 비어있으면 Grab 시도 무시
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
-            Debug.LogWarning($"[GRAB ABORTED] Slot {slotIndex} is empty. Cannot grab.");
-
             if (grabInteractable != null)
             {
+                // XR Interactor의 상태를 재설정하여 빈 슬롯을 잡는 것을 방지
                 grabInteractable.enabled = false;
                 grabInteractable.enabled = true;
             }
             return;
         }
 
-        Debug.Log($"[INPUT SUCCESS] Select Start: Slot {slotIndex} 잡기 시작");
-
         grabbedIndex = this.slotIndex;
 
-        // Grab 시 Raycast에서 제외
-        if (grabInteractable != null)
+        // 재귀 함수를 사용하여 잡은 슬롯과 모든 자식의 Layer를 Grabbed로 변경
+        if (grabbedLayer != -1)
         {
-            grabInteractable.interactionLayers = 0;
-            Debug.Log($"[XRIT MASK CHANGE] Slot {slotIndex} Interaction Layers changed to Nothing (0) during Grab.");
+            SetLayerRecursively(gameObject, grabbedLayer);
         }
 
+        // 시각적 피드백 (반투명화)
         if (slotImage != null)
         {
             Color color = slotImage.color;
@@ -206,32 +258,20 @@ public class VRSlotInteraction : MonoBehaviour
             transform.SetParent(originalParent);
             transform.localPosition = initialLocalPosition;
             transform.localRotation = initialLocalRotation;
-
-            Debug.LogWarning("[PARENT OVERRIDE] Parent was changed by XRIT, forcing restoration to original parent.");
         }
     }
 
-    // Select 종료 시 호출 (Layer Mask 복원 로직 추가)
     public void OnSelectEndWithDelay(SelectExitEventArgs args)
     {
         if (grabbedIndex != this.slotIndex)
         {
-            Debug.LogWarning($"[SELECT END ABORTED] Slot {slotIndex} was not the successfully grabbed slot ({grabbedIndex}). Skipping swap logic.");
-
-            if (grabInteractable != null)
-            {
-                grabInteractable.interactionLayers = originalInteractionLayers;
-            }
-
             RestoreSlotVisualAndPhysics();
             return;
         }
 
-        // Layer Mask 복원
         if (grabInteractable != null)
         {
             grabInteractable.interactionLayers = originalInteractionLayers;
-            Debug.Log($"[XRIT MASK RESTORE] Slot {slotIndex} Interaction Layers restored to original value.");
         }
 
         StartCoroutine(HandleSelectEndDelayed());
@@ -239,120 +279,51 @@ public class VRSlotInteraction : MonoBehaviour
 
     private IEnumerator HandleSelectEndDelayed()
     {
-        yield return null;
+        yield return null; // 1. Interactor의 제어권 해제를 위한 첫 프레임 대기
 
-        Debug.Log($"[INPUT SUCCESS] Select End: Slot {slotIndex} 드롭됨 (지연 후 처리)");
-
-        // 1. Swap Target 찾기 로직: Hover 정보를 사용
         int targetIndex = -1;
         VRSlotInteraction targetSlotInstance = lastHoveredSlot;
+        VRSlotInteraction flashTarget = this; // 기본 플래시 대상은 시작 슬롯 (제자리 드롭)
 
+        // 스왑 타겟 확인 
         if (targetSlotInstance != null && targetSlotInstance.slotIndex != this.slotIndex)
         {
             targetIndex = targetSlotInstance.slotIndex;
-            Debug.Log($"[TARGET FOUND VIA HOVER] Target Index: {targetIndex} (Using last hovered slot)");
-        }
-        else if (targetSlotInstance != null && targetSlotInstance.slotIndex == this.slotIndex)
-        {
-            Debug.LogWarning("[TARGET CHECK ABORTED] Target is self (last hovered slot). Dropping item to self.");
         }
 
-        Debug.Log($"[SWAP CHECK] Grabbed Index: {this.slotIndex}, Dropped Index: {targetIndex}");
-
-        // 2. Swap 실행
-        if (Inventory.Instance != null && targetIndex != -1 && this.slotIndex != targetIndex)
+        // Swap 실행
+        if (Inventory.Instance != null && targetIndex != -1)
         {
             Inventory.Instance.SwapSlots(this.slotIndex, targetIndex);
-            Debug.Log($"[INVENTORY SWAP SUCCESS] Swapped {this.slotIndex} and {targetIndex}");
-        }
-        else
-        {
-            Debug.LogWarning($"[ACTION ABORTED] Grabbed: {this.slotIndex}, Dropped: {targetIndex}. No swap needed or target invalid.");
+
+            // 스왑 성공 시 플래시 대상을 타겟 슬롯으로 변경
+            flashTarget = targetSlotInstance;
+
+            // ⭐ [핵심 수정] 타겟 슬롯의 물리/상호작용 상태를 강제로 복원합니다.
+            targetSlotInstance.RestoreSlotVisualAndPhysics();
         }
 
-        // 3. Grab 상태 초기화 및 복원
-        if (targetSlotInstance != null)
-        {
-            targetSlotInstance.ClearHighlight();
-            lastHoveredSlot = null; // 확실하게 초기화
-        }
-
+        // Grab 상태 초기화 및 타겟 해제
+        lastHoveredSlot = null;
         grabbedIndex = -1;
 
+        // 1단계: 잡았던 슬롯의 위치/레이어/투명도 등 물리적 상태를 즉시 복구 (Visual Snap-Back)
         RestoreSlotVisualAndPhysics();
-        Debug.Log($"[RESTORE] Slot {slotIndex} Position and Rotation restored.");
-    }
 
-    // 이 함수는 이제 HandleSelectEndDelayed에서 사용되지 않습니다.
-    private int GetTargetSlotIndex(Vector3 dropPosition)
-    {
-        // 1. LayerMask 확인
-        string layerName = "GrabUI";
-        int slotLayer = LayerMask.GetMask(layerName);
+        // 2단계: 물리적 복구가 렌더링에 반영되어 아이템이 제자리를 찾을 때까지 한 프레임 더 대기
+        yield return null;
 
-        // 검색 반경 0.3f 적용
-        float searchRadius = 0.3f;
+        // ⭐ [추가] Inventory.Instance.SwapSlots() 호출로 인해 혹시라도 비활성화된 
+        // 다른 퀵슬롯들을 포함, 모든 슬롯의 Interactable을 강제로 활성화합니다.
+        RefreshAllInteractables();
 
-        if (slotLayer == 0)
-        {
-            Debug.LogError($"[DEBUG ERROR 1] Layer Mask Error: '{layerName}' Layer not found or invalid. Check your Unity Layer setup!");
-            return -1;
-        }
-
-        // 2. OverlapSphere 실행
-        Collider[] hitColliders = Physics.OverlapSphere(dropPosition, searchRadius, slotLayer);
-
-        Debug.Log($"[OVERLAP SEARCH] Position: {dropPosition}, Radius: {searchRadius}m, Found Colliders: {hitColliders.Length} (Layer: {layerName})");
-
-        if (hitColliders.Length == 0)
-        {
-            Debug.LogWarning($"[DEBUG ERROR 2] No Colliders Found. The dropped item is not overlapping any other '{layerName}' slot within {searchRadius}m.");
-            return -1;
-        }
-
-        // 3. 가장 가까운 VRSlotInteraction 컴포넌트를 가진 슬롯을 찾습니다.
-        VRSlotInteraction closestTarget = null;
-        float minDistance = float.MaxValue;
-        bool foundTarget = false;
-
-        foreach (var hitCollider in hitColliders)
-        {
-            VRSlotInteraction targetSlot = hitCollider.GetComponent<VRSlotInteraction>();
-
-            if (targetSlot != null && targetSlot.slotIndex != this.slotIndex)
-            {
-                foundTarget = true;
-
-                float distance = Vector3.Distance(hitCollider.bounds.center, dropPosition);
-
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    closestTarget = targetSlot;
-                }
-            }
-        }
-
-        if (closestTarget != null)
-        {
-            Debug.Log($"[TARGET FOUND SUCCESS] Closest Target Index: {closestTarget.slotIndex}, Distance: {minDistance:F3}m");
-            return closestTarget.slotIndex;
-        }
-
-        if (foundTarget)
-        {
-            Debug.LogWarning("[DEBUG ERROR 3] Valid Collider(s) Found, but no valid *different* target slot (only self or component missing).");
-        }
-        else
-        {
-            Debug.LogWarning("[DEBUG ERROR 3] Collider Found, but no valid target slot (VRSlotInteraction component missing on all detected colliders).");
-        }
-
-        return -1;
+        // 3단계: 최종 목적지 슬롯에서 하이라이트 플래시를 시작하고 완료될 때까지 기다림
+        yield return StartCoroutine(flashTarget.FlashHighlight(0.1f));
     }
 
     private void RestoreSlotVisualAndPhysics()
     {
+        // 시각적 피드백 복구
         if (slotImage != null)
         {
             Color color = slotImage.color;
@@ -360,6 +331,7 @@ public class VRSlotInteraction : MonoBehaviour
             slotImage.color = color;
         }
 
+        // 위치/회전 강제 복원 (Visual Snap)
         if (transform.parent != originalParent)
         {
             transform.SetParent(originalParent);
@@ -367,32 +339,49 @@ public class VRSlotInteraction : MonoBehaviour
         transform.localPosition = initialLocalPosition;
         transform.localRotation = initialLocalRotation;
 
+        // Layer 원상 복구 (재귀적으로)
+        SetLayerRecursively(gameObject, originalLayer);
+
+        // Collider 활성화
         if (slotCollider != null)
         {
             slotCollider.enabled = true;
             slotCollider.isTrigger = false;
         }
+
+        // ⭐ 버그 수정: 아이템 제거 후 XRGrabInteractable이 비활성화되는 현상을 방지
+        // (이 함수가 호출되는 모든 경우에 대해 Interactable을 강제로 활성화합니다.)
+        if (grabInteractable != null)
+        {
+            grabInteractable.enabled = true;
+        }
+
+        ClearHighlightVisual(); // 안전장치로 하이라이트 잔상 제거
     }
 
     public void OnActivatedForUse(ActivateEventArgs args)
     {
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
-            Debug.LogWarning($"[USE ABORTED] Slot {slotIndex} is empty. Cannot use.");
             return;
         }
 
         if (Inventory.Instance != null)
         {
             Inventory.Instance.UseItem(this.slotIndex);
-            Debug.Log($"[INPUT SUCCESS] Item used in slot {slotIndex} via Secondary Button (Activate).");
         }
+    }
+
+    private int GetTargetSlotIndex(Vector3 dropPosition)
+    {
+        return -1;
     }
 
     private void OnDestroy()
     {
         if (grabInteractable != null)
         {
+            // 모든 리스너 제거
             grabInteractable.selectEntered.RemoveListener(OnSelectStart);
             grabInteractable.selectExited.RemoveListener(OnSelectEndWithDelay);
             grabInteractable.hoverEntered.RemoveListener(OnHoverStart);
@@ -401,6 +390,7 @@ public class VRSlotInteraction : MonoBehaviour
             grabInteractable.selectEntered.RemoveListener(OnSelectStartedOverrideParenting);
         }
 
+        // 인스턴스 등록 해제
         if (allSlotInteractions.ContainsKey(slotIndex))
         {
             allSlotInteractions.Remove(slotIndex);
