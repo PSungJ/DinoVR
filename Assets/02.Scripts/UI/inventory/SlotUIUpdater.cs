@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.XR.Interaction.Toolkit; // XRGrabInteractable을 사용하기 위해 추가
 
 public class SlotUIUpdater : MonoBehaviour
 {
@@ -10,31 +9,60 @@ public class SlotUIUpdater : MonoBehaviour
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI itemAmountText;
 
-    [Header("Interaction")]
-    //  [핵심 추가] 각 슬롯의 XRGrabInteractable 컴포넌트를 Inspector에서 연결해야 합니다.
-    [SerializeField] private XRGrabInteractable grabInteractable;
+    // ⭐ 하이라이트 효과를 위한 Image 컴포넌트
+    [Header("Highlight Elements")]
+    [SerializeField] private Image highlightBorder;
 
+    private Color originalBorderColor;
+
+    private void Awake()
+    {
+        // 하이라이트용 Image 컴포넌트가 있다면 초기 색상을 저장합니다.
+        if (highlightBorder != null)
+        {
+            originalBorderColor = highlightBorder.color;
+            // 초기에는 비활성화 상태
+            highlightBorder.enabled = false;
+        }
+    }
 
     /// <summary>
-    /// 아이템 데이터를 기반으로 슬롯 UI를 갱신합니다.
+    /// 현재 슬롯의 하이라이트 상태를 설정합니다.
+    /// QuickSlotManager에서 호출되어 현재 선택된 슬롯을 초록색으로 표시합니다.
     /// </summary>
+    /// <param name="isHighlighted">하이라이트 활성화 여부</param>
+    /// <param name="color">하이라이트 색상 (예: Color.green)</param>
+    public void SetHighlight(bool isHighlighted, Color color)
+    {
+        if (highlightBorder == null)
+        {
+            Debug.LogError("[SlotUIUpdater] highlightBorder Image is not assigned. Cannot set highlight.");
+            return;
+        }
+
+        if (isHighlighted)
+        {
+            // 하이라이트 활성화 및 색상 적용
+            highlightBorder.enabled = true;
+            highlightBorder.color = color;
+        }
+        else
+        {
+            // 하이라이트 비활성화
+            highlightBorder.enabled = false;
+        }
+    }
+
+    // 인벤토리 클래스에서 호출될 함수 (아이템 데이터를 받아 UI를 갱신)
     public void UpdateSlotUI(ItemBaseSO itemData, int stackSize)
     {
         // 아이템이 유효한지 판단
         bool hasItem = itemData != null && stackSize > 0;
 
-        // 1. 아이콘 GameObject 활성화/비활성화 (이미지 표시 및 잔상 문제 해결)
+        // 아이템 아이콘 게임 오브젝트 활성화/비활성화
         if (itemIcon != null)
         {
-            // 컴포넌트 enabled 대신 GameObject 자체를 켜고 끕니다.
             itemIcon.gameObject.SetActive(hasItem);
-        }
-
-        // 🔥 2. Grab Interactable 활성화/비활성화 (퀵슬롯 Grab 문제 해결)
-        // 아이템이 있을 때만 잡을 수 있도록 합니다.
-        if (grabInteractable != null)
-        {
-            grabInteractable.enabled = hasItem;
         }
 
         if (hasItem)
