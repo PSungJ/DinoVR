@@ -1,76 +1,77 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 
 
 public class EquipmentSlotUI : MonoBehaviour
 {
     [Header("Configuration")]
-    // ÀÌ ½½·ÔÀÌ ´ã´çÇÏ´Â ÀåÂø À§Ä¡
+    // ì´ ìŠ¬ë¡¯ì´ ë‹´ë‹¹í•˜ëŠ” ì¥ì°© ìœ„ì¹˜
     [SerializeField] private EquipSlotType slotType;
 
     [Header("Dependencies")]
-    // Àåºñ ÇØÁ¦ ·ÎÁ÷À» È£ÃâÇÏ±â À§ÇÑ ÂüÁ¶
+    // ì¥ë¹„ í•´ì œ ë¡œì§ì„ í˜¸ì¶œí•˜ê¸° ìœ„í•œ ì°¸ì¡°
     [SerializeField] private EquipmentManager equipmentManager;
-    // ÇØÁ¦µÈ ¾ÆÀÌÅÛÀ» µ¹·Áº¸³¾ ÀÎº¥Åä¸® ÂüÁ¶
+    // í•´ì œëœ ì•„ì´í…œì„ ëŒë ¤ë³´ë‚¼ ì¸ë²¤í† ë¦¬ ì°¸ì¡°
     [SerializeField] private Inventory inventoryManager;
 
     [Header("UI Elements")]
     [SerializeField] private Image itemIcon;
-    // Àåºñ°¡ ¾øÀ» ¶§ ¾ÆÀÌÄÜÀ» ºñÈ°¼ºÈ­ÇÏ±â À§ÇÑ ºÎ¸ğ GameObject (¼±ÅÃ »çÇ×)
+    // ì¥ë¹„ê°€ ì—†ì„ ë•Œ ì•„ì´ì½˜ì„ ë¹„í™œì„±í™”í•˜ê¸° ìœ„í•œ ë¶€ëª¨ GameObject (ì„ íƒ ì‚¬í•­)
     [SerializeField] private GameObject emptyState;
 
-    // ÀÌ ½½·ÔÀÌ ¾î¶² Å¸ÀÔÀÇ Àåºñ¸¦ ´ã´çÇÏ´ÂÁö ¹İÈ¯
+    // ì´ ìŠ¬ë¡¯ì´ ì–´ë–¤ íƒ€ì…ì˜ ì¥ë¹„ë¥¼ ë‹´ë‹¹í•˜ëŠ”ì§€ ë°˜í™˜
     public EquipSlotType SlotType => slotType;
 
     private void Start()
     {
-        // ÃÊ±â UI »óÅÂ¸¦ EquipmentManager·ÎºÎÅÍ ¹Ş¾Æ¿Í ¼³Á¤
+        // ì´ˆê¸° UI ìƒíƒœë¥¼ EquipmentManagerë¡œë¶€í„° ë°›ì•„ì™€ ì„¤ì •
         UpdateSlotUI(equipmentManager.CurrentEquipment[slotType]);
     }
 
     // ----------------------------------------------------
-    // [UI ¾÷µ¥ÀÌÆ® ·ÎÁ÷] (EquipmentManager¿¡¼­ È£ÃâµÊ)
+    // [UI ì—…ë°ì´íŠ¸ ë¡œì§] (EquipmentManagerì—ì„œ í˜¸ì¶œë¨)
     // ----------------------------------------------------
-    // Àåºñ ¸Å´ÏÀú¿¡¼­ ÀÌ ½½·ÔÀÇ Àåºñ°¡ º¯°æµÉ ¶§ È£ÃâµË´Ï´Ù.
+    // ì¥ë¹„ ë§¤ë‹ˆì €ì—ì„œ ì´ ìŠ¬ë¡¯ì˜ ì¥ë¹„ê°€ ë³€ê²½ë  ë•Œ í˜¸ì¶œë©ë‹ˆë‹¤.
     public void UpdateSlotUI(EquippableItemSO currentItem)
     {
         bool isEquipped = (currentItem != null);
-        
+
         if (itemIcon != null)
         {
-            itemIcon.sprite = isEquipped? currentItem.itemIcon : null;
-    itemIcon.enabled = isEquipped;
+            itemIcon.sprite = isEquipped ? currentItem.itemIcon : null;
+            itemIcon.enabled = isEquipped;
         }
 
-if (emptyState != null)
-{
-    emptyState.SetActive(!isEquipped);
-}
+        if (emptyState != null)
+        {
+            emptyState.SetActive(!isEquipped);
+        }
     }
-    
+
     // ----------------------------------------------------
-    // [Àåºñ ÇØÁ¦ ·ÎÁ÷] (VR Select ¹öÆ° ¶Ç´Â UI ¹öÆ°°ú ¿¬°á)
+    // [ì¥ë¹„ í•´ì œ ë¡œì§] (VR Select ë²„íŠ¼ ë˜ëŠ” UI ë²„íŠ¼ê³¼ ì—°ê²°)
     // ----------------------------------------------------
-    // UI ¹öÆ°ÀÇ OnClick ÀÌº¥Æ®³ª VR Select »óÈ£ÀÛ¿ë¿¡ ¿¬°áµË´Ï´Ù.
+    // UI ë²„íŠ¼ì˜ OnClick ì´ë²¤íŠ¸ë‚˜ VR Select ìƒí˜¸ì‘ìš©ì— ì—°ê²°ë©ë‹ˆë‹¤.
     public void OnSlotSelect()
     {
-    // 1. EquipmentManager¿¡ Àåºñ ÇØÁ¦ ¿äÃ» (¾ÆÀÌÅÛ ¹İÈ¯¹ŞÀ½)
-    EquippableItemSO itemToReturn = equipmentManager.Unequip (slotType);
+        // 1. EquipmentManagerì— ì¥ë¹„ í•´ì œ ìš”ì²­ (ì•„ì´í…œ ë°˜í™˜ë°›ìŒ)
+        EquippableItemSO itemToReturn = equipmentManager.Unequip(slotType);
 
-    if (itemToReturn != null)
-    {
-        // 2. ÀÎº¥Åä¸®¿¡ ¾ÆÀÌÅÛ Ãß°¡ ¿äÃ»
-        bool wasAdded = inventoryManager.AddItem (itemToReturn, 1);
-
-        if (!wasAdded)
+        if (itemToReturn != null)
         {
-            // 3. ÀÎº¥Åä¸®°¡ °¡µæ Ã¡À» °æ¿ì: ´Ù½Ã Àåºñ (ÇØÁ¦ ½ÇÆĞ Ã³¸®)
-            equipmentManager.Equip (itemToReturn);
-            Debug.LogWarning("Inventory is full! Unequip failed.");
-            // TODO: »ç¿ëÀÚ¿¡°Ô ÀÎº¥Åä¸®°¡ °¡µæ Ã¡À½À» ¾Ë¸®´Â UI ÇÇµå¹é Á¦°ø
+            // 2. ì¸ë²¤í† ë¦¬ì— ì•„ì´í…œ ì¶”ê°€ ìš”ì²­
+            bool wasAdded = inventoryManager.AddItem(itemToReturn, 1);
+
+            if (!wasAdded)
+            {
+                // 3. ì¸ë²¤í† ë¦¬ê°€ ê°€ë“ ì°¼ì„ ê²½ìš°: ë‹¤ì‹œ ì¥ë¹„ (í•´ì œ ì‹¤íŒ¨ ì²˜ë¦¬)
+                // ğŸ”¥ ì˜¤ë¥˜ ìˆ˜ì •: Equip ë©”ì„œë“œì— í•„ìˆ˜ ë§¤ê°œë³€ìˆ˜ì¸ inventorySlotIndexë¥¼ -1ë¡œ ì „ë‹¬í•©ë‹ˆë‹¤.
+                equipmentManager.Equip(itemToReturn, -1);
+                Debug.LogWarning("Inventory is full! Unequip failed. Item re-equipped.");
+                // TODO: ì‚¬ìš©ìì—ê²Œ ì¸ë²¤í† ë¦¬ê°€ ê°€ë“ ì°¼ìŒì„ ì•Œë¦¬ëŠ” UI í”¼ë“œë°± ì œê³µ
+            }
+            // AddItemì´ ì„±ê³µí•˜ë©´ EquipmentManagerê°€ UpdateSlotUIë¥¼ í˜¸ì¶œí•  í•„ìš”ê°€ ì—†ìŠµë‹ˆë‹¤.
+            // EquipmentManager.Unequip() í˜¸ì¶œ ì‹œ ì´ë¯¸ UI ì—…ë°ì´íŠ¸ê°€ ë°œìƒí–ˆê¸° ë•Œë¬¸ì…ë‹ˆë‹¤.
         }
-        // AddItemÀÌ ¼º°øÇÏ¸é EquipmentManager°¡ UpdateSlotUI¸¦ È£ÃâÇÒ ÇÊ¿ä°¡ ¾ø½À´Ï´Ù.
-        // EquipmentManager.Unequip() È£Ãâ ½Ã ÀÌ¹Ì UI ¾÷µ¥ÀÌÆ®°¡ ¹ß»ıÇß±â ¶§¹®ÀÔ´Ï´Ù.
     }
-}
 }

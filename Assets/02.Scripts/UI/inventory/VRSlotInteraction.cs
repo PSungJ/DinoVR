@@ -23,8 +23,8 @@ public class VRSlotInteraction : MonoBehaviour
     [Header("Highlight Settings")]
     [SerializeField] private Image highlightImage;
     [SerializeField] private Color defaultHighlightColor = Color.clear;
-    [SerializeField] private Color hoverHighlightColor = Color.yellow; // 플래시 색상으로 사용
-    [SerializeField] private Color defaultHoverColor = Color.cyan; // 일반 포인팅 시 Hover 색상
+    [SerializeField] private Color hoverHighlightColor = Color.yellow;
+    [SerializeField] private Color defaultHoverColor = Color.cyan;
 
     // Grabbed Index (출발지)
     private static int grabbedIndex = -1;
@@ -57,16 +57,19 @@ public class VRSlotInteraction : MonoBehaviour
             return;
         }
 
+        // ⭐ [FIX]: 빈 슬롯 Grab 방지 로직 추가 (Select 시도 전에 호출되어 Grab 가능 여부를 판단)
+        if (grabInteractable != null)
+        {
+            grabInteractable.selectEnterChecking = (interactor) => CanSelectOverride(interactor);
+        }
+
         // 2. 부모/위치/회전 저장
         originalParent = transform.parent;
         initialLocalPosition = transform.localPosition;
         initialLocalRotation = transform.localRotation;
 
         // 3. XRIT Layer Mask 저장
-        if (grabInteractable != null)
-        {
-            originalInteractionLayers = grabInteractable.interactionLayers;
-        }
+        originalInteractionLayers = grabInteractable.interactionLayers;
 
         // 4. 레이어 ID 저장 및 원래 레이어 저장
         originalLayer = gameObject.layer;
@@ -109,6 +112,20 @@ public class VRSlotInteraction : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ⭐ [FIX] XRGrabInteractable의 Select 시도 전에 호출되어 Grab 가능 여부를 판단합니다.
+    /// 빈 슬롯인 경우 false를 반환하여 Grab 자체를 막습니다.
+    /// </summary>
+    private bool CanSelectOverride(IXRSelectInteractor interactor)
+    {
+        if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
+        {
+            return false;
+        }
+        return true;
+    }
+
+
     // [재귀 함수] 오브젝트와 모든 자식의 Layer를 변경합니다.
     private static void SetLayerRecursively(GameObject obj, int newLayer)
     {
@@ -122,16 +139,17 @@ public class VRSlotInteraction : MonoBehaviour
         }
     }
 
-    // ⭐ [추가] 모든 슬롯의 XRInteractable 상태를 강제로 활성화합니다.
+    /// <summary>
+    /// ⭐ [Optimized] 아이템 제거 후 XRGrabInteractable이 비활성화되는 버그 방지를 위해 모든 슬롯을 강제 활성화합니다.
+    /// </summary>
     public static void RefreshAllInteractables()
     {
         foreach (var slot in allSlotInteractions.Values)
         {
             if (slot != null && slot.grabInteractable != null)
             {
-                // 이미 RestoreSlotVisualAndPhysics 내부에 포함되어 있지만, 
-                // 전체 복원을 위해 안전하게 Restore 함수를 호출합니다.
-                slot.RestoreSlotVisualAndPhysics();
+                slot.grabInteractable.enabled = true;
+                slot.ClearHighlightVisual(); // 잔상 제거 안전장치
             }
         }
     }
@@ -146,7 +164,7 @@ public class VRSlotInteraction : MonoBehaviour
         }
         else if (this.slotIndex != grabbedIndex)
         {
-            // Grab 중 Hover (Swap Target): 비주얼 없이 타겟 설정 로직만 유지
+            // Grab 중 Hover (Swap Target): 타겟 설정 로직만 유지
 
             if (lastHoveredSlot != null && lastHoveredSlot != this)
             {
@@ -170,7 +188,6 @@ public class VRSlotInteraction : MonoBehaviour
         }
     }
 
-    // 일반 Hover 시 하이라이트 적용 함수
     public void ApplyDefaultHoverHighlight()
     {
         if (highlightImage != null)
@@ -181,7 +198,6 @@ public class VRSlotInteraction : MonoBehaviour
         }
     }
 
-    // 드롭 플래시 하이라이트 적용 함수 (Post-drop Flash에서 사용)
     public void ApplyFlashHighlight()
     {
         if (highlightImage != null)
@@ -190,7 +206,7 @@ public class VRSlotInteraction : MonoBehaviour
             targetColor.a = 1.0f;
             highlightImage.color = targetColor;
         }
-        // 플래시 시작 시 슬롯 이미지의 투명도도 복원 (Grab 시 0.5로 설정되었으므로)
+        // 플래시 시작 시 슬롯 이미지의 투명도 복원 (Grab 시 0.5로 설정되었으므로)
         if (slotImage != null)
         {
             Color color = slotImage.color;
@@ -220,17 +236,8 @@ public class VRSlotInteraction : MonoBehaviour
     // --- (Select/Grab 로직) ---
     public void OnSelectStart(SelectEnterEventArgs args)
     {
-        // 슬롯이 비어있으면 Grab 시도 무시
-        if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
-        {
-            if (grabInteractable != null)
-            {
-                // XR Interactor의 상태를 재설정하여 빈 슬롯을 잡는 것을 방지
-                grabInteractable.enabled = false;
-                grabInteractable.enabled = true;
-            }
-            return;
-        }
+        // ⭐ [CLEANUP] 빈 슬롯 확인 로직은 이제 CanSelectOverride에서 처리됩니다.
+        // 이 함수가 호출된다는 것은 이미 아이템이 있다는 뜻입니다.
 
         grabbedIndex = this.slotIndex;
 
@@ -265,6 +272,7 @@ public class VRSlotInteraction : MonoBehaviour
     {
         if (grabbedIndex != this.slotIndex)
         {
+            // 스왑 대상이었던 경우라도, 잡았던 슬롯의 상태는 복원되어야 합니다.
             RestoreSlotVisualAndPhysics();
             return;
         }
@@ -294,12 +302,14 @@ public class VRSlotInteraction : MonoBehaviour
         // Swap 실행
         if (Inventory.Instance != null && targetIndex != -1)
         {
+            // Inventory.SwapSlots 호출 (QuickSlotManager 연동 로직 포함)
             Inventory.Instance.SwapSlots(this.slotIndex, targetIndex);
 
             // 스왑 성공 시 플래시 대상을 타겟 슬롯으로 변경
             flashTarget = targetSlotInstance;
 
-            // ⭐ [핵심 수정] 타겟 슬롯의 물리/상호작용 상태를 강제로 복원합니다.
+            // ⭐ [CRITICAL FIX] 타겟 슬롯의 물리/상호작용 상태를 강제로 복원합니다.
+            // 인벤토리 데이터가 갱신되었으므로, 해당 슬롯이 제자리를 찾도록 합니다.
             targetSlotInstance.RestoreSlotVisualAndPhysics();
         }
 
@@ -313,8 +323,7 @@ public class VRSlotInteraction : MonoBehaviour
         // 2단계: 물리적 복구가 렌더링에 반영되어 아이템이 제자리를 찾을 때까지 한 프레임 더 대기
         yield return null;
 
-        // ⭐ [추가] Inventory.Instance.SwapSlots() 호출로 인해 혹시라도 비활성화된 
-        // 다른 퀵슬롯들을 포함, 모든 슬롯의 Interactable을 강제로 활성화합니다.
+        // ⭐ [Optimized] Interactable 비활성화 버그 방지를 위해 전체 슬롯을 강제로 활성화
         RefreshAllInteractables();
 
         // 3단계: 최종 목적지 슬롯에서 하이라이트 플래시를 시작하고 완료될 때까지 기다림
@@ -349,8 +358,7 @@ public class VRSlotInteraction : MonoBehaviour
             slotCollider.isTrigger = false;
         }
 
-        // ⭐ 버그 수정: 아이템 제거 후 XRGrabInteractable이 비활성화되는 현상을 방지
-        // (이 함수가 호출되는 모든 경우에 대해 Interactable을 강제로 활성화합니다.)
+        // ⭐ [FIX] 아이템 제거 후 XRGrabInteractable이 비활성화되는 현상을 방지
         if (grabInteractable != null)
         {
             grabInteractable.enabled = true;
@@ -361,6 +369,7 @@ public class VRSlotInteraction : MonoBehaviour
 
     public void OnActivatedForUse(ActivateEventArgs args)
     {
+        // 사용 시도 전, 빈 슬롯 여부 확인
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
             return;
@@ -374,6 +383,7 @@ public class VRSlotInteraction : MonoBehaviour
 
     private int GetTargetSlotIndex(Vector3 dropPosition)
     {
+        // 현재 Hover 기반 스왑 로직을 사용하므로 이 함수는 사용되지 않습니다.
         return -1;
     }
 
@@ -388,6 +398,9 @@ public class VRSlotInteraction : MonoBehaviour
             grabInteractable.hoverExited.RemoveListener(OnHoverEnd);
             grabInteractable.activated.RemoveListener(OnActivatedForUse);
             grabInteractable.selectEntered.RemoveListener(OnSelectStartedOverrideParenting);
+
+            // ⭐ [CLEANUP] 추가된 selectEnterChecking 해제 (GC 문제 방지)
+            grabInteractable.selectEnterChecking = null;
         }
 
         // 인스턴스 등록 해제
