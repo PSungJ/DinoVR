@@ -1,113 +1,139 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
-// EquipSlotType Enum Á¤ÀÇ (PlayerStats.cs¿¡¼­ Á¤ÀÇµÈ Enum°ú µ¿ÀÏÇÏ°Ô »ç¿ë)
+// ì¥ì°© ì•„ì´í…œì´ ë“¤ì–´ê°ˆ ìˆ˜ ìˆëŠ” ìŠ¬ë¡¯ì˜ ì¢…ë¥˜ë¥¼ ì •ì˜í•©ë‹ˆë‹¤.
+// ì´ ì—´ê±°í˜•ì€ EquippableItemSOì—ì„œë„ ì°¸ì¡°ë©ë‹ˆë‹¤.
 public enum EquipSlotType
 {
     Weapon,
-    Cyberware
+    Helmet,
+    Armor,
+    Boots
 }
 
+/// <summary>
+/// í”Œë ˆì´ì–´ì˜ ì¥ë¹„ ì•„ì´í…œì„ ê´€ë¦¬í•˜ê³  ê´€ë ¨ ë¡œì§ì„ ì²˜ë¦¬í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// </summary>
 public class EquipmentManager : MonoBehaviour
 {
-    [Header("Dependencies")]
-    // PlayerStats ÂüÁ¶ ÇÊ¼ö (½ºÅÈ ¹İ¿µ/Á¦°Å¿ë)
-    [SerializeField] private PlayerStats playerStats;
-    
-    [Header("UI Dependencies")]
-    // EquipmentSlotUI ÄÄÆ÷³ÍÆ® ÂüÁ¶ (UI ¾÷µ¥ÀÌÆ®¿ë)
-    [SerializeField] private EquipmentSlotUI weaponSlotUI; 
-    [SerializeField] private EquipmentSlotUI cyberwareSlotUI;
-    
-    // ÇöÀç ÀåÂøµÈ ÀåºñµéÀ» Dictionary·Î °ü¸®ÇÕ´Ï´Ù.
-    private Dictionary<EquipSlotType, EquippableItemSO> currentEquipment;
-    
-    // ¿ÜºÎ¿¡¼­ ÀåÂø Á¤º¸¸¦ ÀĞÀ» ¼ö ÀÖµµ·Ï publicÀ¸·Î ¼±¾ğ
-    public Dictionary<EquipSlotType, EquippableItemSO> CurrentEquipment => currentEquipment;
+    // Singleton pattern for easy access
+    public static EquipmentManager Instance { get; private set; }
+
+    [Header("Dependencies")] // ê¸°ì¡´ Canvas í•„ë“œ ìœ ì§€
+    [SerializeField] private QuickSlotManager quickSlotManager;
+    [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs; // UI ê°±ì‹ ì„ ìœ„í•´ UI ì»´í¬ë„ŒíŠ¸ ì°¸ì¡°
+
+    // í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œì„ ì €ì¥í•˜ëŠ” ë”•ì…”ë„ˆë¦¬ (ì‚¬ìš©ì ìš”ì²­ ë°˜ì˜)
+    private Dictionary<EquipSlotType, EquippableItemSO> equippedItems = new Dictionary<EquipSlotType, EquippableItemSO>();
+
+    /// <summary>
+    /// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œ ëª©ë¡ì„ ì½ê¸° ì „ìš©ìœ¼ë¡œ ë°˜í™˜í•©ë‹ˆë‹¤.
+    /// </summary>
+    public IReadOnlyDictionary<EquipSlotType, EquippableItemSO> CurrentEquipment => equippedItems;
 
     private void Awake()
     {
-        currentEquipment = new Dictionary<EquipSlotType, EquippableItemSO>();
-        // ¸ğµç EquipSlotTypeÀ» ÀÚµ¿À¸·Î null·Î ÃÊ±âÈ­ÇÕ´Ï´Ù.
-        foreach (EquipSlotType type in System.Enum.GetValues(typeof(EquipSlotType)))
+        if (Instance == null)
         {
-            currentEquipment.Add(type, null);
+            Instance = this;
         }
-    }
-
-    // ----------------------------------------------------
-    // [Àåºñ ÀåÂø ·ÎÁ÷] (Inventory.cs¿¡¼­ È£ÃâµÊ)
-    // ----------------------------------------------------
-    // »õ Àåºñ¸¦ ÀåÂøÇÏ°í, ±âÁ¸ Àåºñ(ÀÖÀ» °æ¿ì)¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
-    public EquippableItemSO Equip(EquippableItemSO item)
-    {
-        EquipSlotType slot = item.equipSlotType;
-        EquippableItemSO oldItem = null;
-
-        // 1. ±âÁ¸ Àåºñ ÇØÁ¦
-        if (currentEquipment[slot] != null)
+        else
         {
-            oldItem = currentEquipment[slot];
-            
-            // PlayerStats¿¡¼­ ÀÌÀü ÀåºñÀÇ ½ºÅÈ ÇØÁ¦
-            if (playerStats != null)
+            Destroy(gameObject);
+            return;
+        }
+
+        // ì´ˆê¸°í™”: ëª¨ë“  ìŠ¬ë¡¯ì„ nullë¡œ ì„¤ì •
+        foreach (EquipSlotType slot in System.Enum.GetValues(typeof(EquipSlotType)))
+        {
+            // ì¤‘ë³µ ì¶”ê°€ë¥¼ í”¼í•˜ê¸° ìœ„í•´ ì´ë¯¸ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤.
+            if (!equippedItems.ContainsKey(slot))
             {
-                playerStats.RemoveEquipmentModifiers(oldItem);
+                equippedItems.Add(slot, null);
             }
         }
-
-        // 2. »õ ¾ÆÀÌÅÛ ÀåÂø ¹× ½ºÅÈ Àû¿ë
-        currentEquipment[slot] = item;
-
-// PlayerStats¿¡ »õ ÀåºñÀÇ ½ºÅÈ Àû¿ë (°ø°İ·Â¸¸)
-        if (playerStats != null)
-        {
-            playerStats.ApplyEquipmentModifiers(item);
-}
-
-// 3. UI ¾÷µ¥ÀÌÆ®
-        UpdateEquipmentUI(slot, item);
-
-        return oldItem; // ÀÎº¥Åä¸®·Î ¹İÈ¯ÇÒ ¾ÆÀÌÅÛ (½º¿ÒµÈ ¾ÆÀÌÅÛ)
     }
 
     // ----------------------------------------------------
-    // [Àåºñ ÇØÁ¦ ·ÎÁ÷] (EquipmentSlotUI.cs¿¡¼­ È£ÃâµÊ)
+    // [ì¥ë¹„ ë¡œì§]
     // ----------------------------------------------------
-    // Àåºñ¸¦ ÇØÁ¦ÇÏ°í, ÇØÁ¦µÈ ¾ÆÀÌÅÛÀ» ¹İÈ¯ÇÕ´Ï´Ù.
-    public EquippableItemSO Unequip(EquipSlotType slot)
-    {
-        if (currentEquipment[slot] == null) return null;
 
-        EquippableItemSO itemToReturn = currentEquipment[slot];
-        
-        // PlayerStats¿¡¼­ ½ºÅÈ ÇØÁ¦ (°ø°İ·Â¸¸)
-        if (playerStats != null)
+    /// <summary>
+    /// ìƒˆë¡œìš´ ì¥ë¹„ ì•„ì´í…œì„ ì¥ì°©í•©ë‹ˆë‹¤.
+    /// ğŸ”¥ Inventory.csì˜ ë¡œì§ì„ ìœ„í•´ ì¥ì°© í•´ì œëœ ì´ì „ ì•„ì´í…œì„ ë°˜í™˜í•©ë‹ˆë‹¤.
+    /// </summary>
+    /// <param name="itemToEquip">ì¥ì°©í•  ì•„ì´í…œ ë°ì´í„°</param>
+    /// <param name="inventorySlotIndex">ì•„ì´í…œì´ ì˜¨ Inventory ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤ (-1ì€ Inventory ì™¸ë¶€ì—ì„œ ì˜¨ ê²½ìš°)</param>
+    /// <returns>ì¥ì°© í•´ì œëœ ê¸°ì¡´ ì•„ì´í…œ. ì—†ìœ¼ë©´ null.</returns>
+    public EquippableItemSO Equip(EquippableItemSO itemToEquip, int inventorySlotIndex)
+    {
+        if (itemToEquip == null)
         {
-            playerStats.RemoveEquipmentModifiers(itemToReturn);
+            Debug.LogError("[EquipmentManager] Attempted to equip a null item.");
+            return null;
         }
 
-        currentEquipment[slot] = null;
-        
-        // UI ¾÷µ¥ÀÌÆ®
-        UpdateEquipmentUI(slot, null);
-        
-        return itemToReturn; // ÀÎº¥Åä¸®·Î µ¹·Áº¸³¾ ¾ÆÀÌÅÛ
+        EquipSlotType targetSlot = itemToEquip.equipSlotType;
+        EquippableItemSO oldItem = null;
+
+        // 1. ì´ë¯¸ ì¥ì°©ëœ ì•„ì´í…œì´ ìˆëŠ”ì§€ í™•ì¸
+        if (equippedItems.TryGetValue(targetSlot, out EquippableItemSO currentItem) && currentItem != null)
+        {
+            oldItem = currentItem;
+            // 2. ì´ë¯¸ ì•„ì´í…œì´ ìˆë‹¤ë©´, í˜„ì¬ ì•„ì´í…œì„ í•´ì œ
+            equippedItems[targetSlot] = null;
+            Debug.Log($"[EquipmentManager] Unequipping {oldItem.itemName} from {targetSlot} before new equip. (Old item will be returned to inventory.)");
+        }
+
+        // 3. ìƒˆ ì•„ì´í…œ ì¥ì°©
+        equippedItems[targetSlot] = itemToEquip;
+        Debug.Log($"[EquipmentManager] Successfully equipped {itemToEquip.itemName} into {targetSlot} slot.");
+
+        // 4. UI ê°±ì‹ 
+        UpdateEquipmentUI(targetSlot, itemToEquip);
+
+        // 5. QuickSlotManager ì—°ë™ (ì˜µì…˜)
+        // ì—¬ê¸°ì— QuickSlotManager ì—°ë™ ë¡œì§ì´ ë“¤ì–´ê°ˆ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+
+        return oldItem; // ì´ì „ ì•„ì´í…œ ë°˜í™˜ (Inventory.csì™€ì˜ í˜¸í™˜ì„± ìœ ì§€)
     }
-    
-    // ----------------------------------------------------
-    // [³»ºÎ UI ¾÷µ¥ÀÌÆ® ÇïÆÛ]
-    // ----------------------------------------------------
-    private void UpdateEquipmentUI(EquipSlotType slot, EquippableItemSO item)
+
+    /// <summary>
+    /// íŠ¹ì • ìŠ¬ë¡¯ì˜ ì¥ë¹„ë¥¼ í•´ì œí•˜ëŠ” ë¡œì§ì…ë‹ˆë‹¤.
+    /// </summary>
+    /// <param name="slotType">í•´ì œí•  ì¥ì°© ìœ„ì¹˜</param>
+    /// <returns>í•´ì œëœ ì•„ì´í…œ. ì—†ìœ¼ë©´ null.</returns>
+    public EquippableItemSO Unequip(EquipSlotType slotType)
     {
-        // UI ½½·Ô Å¸ÀÔ¿¡ ¸Â°Ô ÇØ´ç UI ÄÄÆ÷³ÍÆ®ÀÇ ¾÷µ¥ÀÌÆ® ÇÔ¼ö¸¦ È£ÃâÇÕ´Ï´Ù.
-        if (slot == EquipSlotType.Weapon && weaponSlotUI != null)
+        if (equippedItems.TryGetValue(slotType, out EquippableItemSO currentItem) && currentItem != null)
         {
-            weaponSlotUI.UpdateSlotUI(item);
+            equippedItems[slotType] = null;
+            Debug.Log($"[EquipmentManager] Unequipped {currentItem.itemName} from {slotType}.");
+
+            // UI ê°±ì‹  (ë¹ˆ ìŠ¬ë¡¯ ìƒíƒœë¡œ ë§Œë“­ë‹ˆë‹¤)
+            UpdateEquipmentUI(slotType, null);
+
+            // QuickSlotManager ì—°ë™ (ì¥ë¹„ í•´ì œ ì‹œ í€µìŠ¬ë¡¯ì— ì•Œë¦¼)
+
+            return currentItem;
         }
-        else if (slot == EquipSlotType.Cyberware && cyberwareSlotUI != null)
+        return null;
+    }
+
+    // ----------------------------------------------------
+    // [UI ê°±ì‹ ]
+    // ----------------------------------------------------
+
+    private void UpdateEquipmentUI(EquipSlotType slotType, EquippableItemSO item)
+    {
+        // í•´ë‹¹ EquipSlotTypeì„ ê°€ì§„ UI ì»´í¬ë„ŒíŠ¸ë¥¼ ì°¾ì•„ ê°±ì‹ 
+        foreach (var uiSlot in equipmentSlotUIs)
         {
-            cyberwareSlotUI.UpdateSlotUI(item);
+            if (uiSlot != null && uiSlot.SlotType == slotType)
+            {
+                uiSlot.UpdateSlotUI(item);
+                break;
+            }
         }
     }
 }
