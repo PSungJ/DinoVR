@@ -1,25 +1,35 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewConsumableItem", menuName = "Inventory/Consumable Item")]
+[CreateAssetMenu(menuName = "Inventory/Items/Consumable Item")]
 public class ConsumableItemSO : ItemBaseSO
 {
-    [Header("Consumption Effect")]
-    [Tooltip("È¸º¹ È¿°úÀÇ Á¾·ù (¿¹: Health, Stamina)")]
-    public string effectType = "Health";
-
-    [Tooltip("È¸º¹·® ¶Ç´Â È¿°ú Áö¼Ó ½Ã°£")]
-    public float restoreAmount = 25f;
-
-    [Header("Status Effects (Optional)")]
-    // ÀÌ ¼Ò¸ğÇ° »ç¿ë ½Ã Á¦°ÅÇÒ »óÅÂ ÀÌ»ó (¿¹: ÅëÁõ Á¦°ÅÁ¦)
-    public StatusEffectType statusToRemove = StatusEffectType.Fatigue;
-    [Tooltip("Á¦°ÅÇÒ »óÅÂ ÀÌ»óÀÌ ¾øÀ» °æ¿ì NoneÀ¸·Î ¼³Á¤")]
-    public bool clearsStatus = false;
+    [Header("Consumable Stats")]
+    [Tooltip("ì‚¬ìš© ì‹œ íšŒë³µë˜ëŠ” ì²´ë ¥ëŸ‰")]
+    public int healthRestoreAmount = 25;
 
     private void OnEnable()
     {
-        // ¼Ò¸ğÇ°Àº ½ºÅÃ °¡´É (±âº» 99°³)
-        maxStackSize = 99;
+        // Consumable ì•„ì´í…œ íƒ€ì… ê°•ì œ ì„¤ì •
         itemType = ItemType.Consumable;
+    }
+
+    /// <summary>
+    /// Consumable ì•„ì´í…œ ì‚¬ìš© ë¡œì§ (ì²´ë ¥ íšŒë³µ êµ¬í˜„)
+    /// </summary>
+    public override void Use(int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)
+    {
+        // â­ ìˆ˜ì •: base.Use í˜¸ì¶œ ì‹œ playerHealthì™€ equipmentManagerë¥¼ ì „ë‹¬í•©ë‹ˆë‹¤.
+        base.Use(slotIndex, playerHealth, equipmentManager); // ê¸°ë³¸ ë””ë²„ê·¸ ë¡œê·¸ í˜¸ì¶œ
+
+        // PlayerHealthComponentë¥¼ ì‚¬ìš©í•˜ì—¬ ì²´ë ¥ íšŒë³µ
+        if (playerHealth != null)
+        {
+            playerHealth.Heal(healthRestoreAmount);
+            // ì•„ì´í…œ ìŠ¤íƒ ê°ì†Œ ë¡œì§ì€ QuickSlotManagerì—ì„œ ì²˜ë¦¬ë©ë‹ˆë‹¤.
+        }
+        else
+        {
+            Debug.LogWarning("[ConsumableItemSO] Cannot find PlayerHealthComponent to heal. Check if PlayerHealthComponent.Instance is correctly initialized.");
+        }
     }
 }

@@ -1,93 +1,144 @@
 ﻿using UnityEngine;
 using System;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
-// 이 파일은 ItemType, ItemBaseSO, InventorySlot, Inventory 클래스가 정의되어 있다고 가정합니다.
+// Inventory, SlotUIUpdater, ItemBaseSO, InventorySlot, ItemType은 전역 범위에서 참조됩니다.
 
 public class QuickSlotManager : MonoBehaviour
 {
-    // --- [필요한 필드 (Inventory.cs와의 연동을 위해)] ---
+    // --- [필요한 필 (Inventory.cs와의 연동을 위해)] ---
     [Header("QuickSlot Setup")]
-    // Inventory.cs의 capacity 이후에 QuickSlot이 이어서 붙어 있다고 가정합니다.
-    [SerializeField] private int quickSlotStartIndex = 30;
+    [SerializeField] public int quickSlotStartIndex = 30; // 인벤토리 배열에서 퀵슬롯이 시작되는 인덱스 (public으로 변경하여 Inventory.cs에서 참조)
     [SerializeField] private int quickSlotCount = 3;
 
-    // 퀵슬롯의 실제 아이템 데이터를 저장하는 배열
+    // QuickSlotManager가 직접 관리하는 퀵슬롯 데이터 (InventorySlot 직접 사용)
     public InventorySlot[] quickSlots;
 
     [Header("UI References")]
-    // 퀵슬롯 HUD UI와 커스터마이징 창의 슬롯 UI를 모두 참조해야 합니다.
-    [SerializeField] private SlotUIUpdater[] quickSlotUIs;
+    // SlotUIUpdater 클래스를 직접 사용합니다.
+    [SerializeField] private SlotUIUpdater[] quickSlotUIReferences;
+
+    // 실제 Inventory 컴포넌트를 연결해야 합니다. 🔥 Inspector에서 이 필드가 반드시 연결되어야 합니다.
+    [SerializeField] private Inventory inventoryReference;
+
+    [SerializeField] private GameObject inventoryUIRoot;
 
     // --- [퀵슬롯 선택 및 사용 로직을 위한 추가 변수] ---
     [Header("QuickSlot Usage")]
     [Tooltip("현재 선택된 퀵슬롯의 내부 인덱스 (0, 1, 2)")]
     private int selectedSlotIndex = 0;
 
-    [SerializeField] private Color selectedHighlightColor = Color.green; // 선택 시 초록색 하이라이트
+    // --- [XR Input Actions] ---
+    [Header("XR Input Actions (Left Hand)")]
+    [Tooltip("왼쪽 컨트롤러 Button West (B) - 인벤토리/퀵슬롯 토글")]
+    [SerializeField] private InputActionProperty toggleInventoryAction;
 
-    // VR 입력 시뮬레이션용 임시 키 코드 (실제 VR 환경에서는 Input Action으로 대체해야 함)
-    // X 버튼 -> Use (예: KeyCode.G)
-    // Y 버튼 -> Cycle (예: KeyCode.H)
-    [Header("Input Simulation (Testing Only)")]
-    [SerializeField] private KeyCode useKey = KeyCode.G;
-    [SerializeField] private KeyCode cycleKey = KeyCode.H;
+    [Tooltip("왼쪽 컨트롤러 Trigger - 현재 퀵슬롯 아이템 사용")]
+    [SerializeField] private InputActionProperty useQuickSlotAction;
+
+    [Tooltip("왼쪽 컨트롤러 Button North (Y) - 퀵슬롯 순환")]
+    [SerializeField] private InputActionProperty cycleQuickSlotAction;
 
     private void Awake()
     {
         // quickSlots 배열 초기화 (퀵슬롯 개수만큼)
-        quickSlots = new InventorySlot[quickSlotCount];
-        for (int i = 0; i < quickSlotCount; i++)
+        quickSlots = new InventorySlot[quickSlotCount]; // InventorySlot 직접 사용
+        for (int i = 0 < quickSlotCount; i++)
         {
-            // InventorySlot.Empty로 초기화
-            quickSlots[i] = InventorySlot.Empty;
+            quickSlots[i] = InventorySlot.Empty; // InventorySlot.Empty 직접 사용
         }
 
         // 초기 선택 슬롯 하이라이트 설정
         RefreshQuickSlotHighlights();
+
+        // 초기에는 UI를 비활성화합니다.
+        if (inventoryUIRoot != null)
+        {
+            inventoryUIRoot.SetActive(false);
+        }
     }
 
     // ----------------------------------------------------
-    // [VR 입력 처리]
+    // [Input Action 구독 및 해제]
     // ----------------------------------------------------
-    private void Update()
+    private void OnEnable()
     {
-        // Y 키 입력: 다음 퀵슬롯으로 전환
-        if (Input.GetKeyDown(cycleKey))
-        {
-            CycleNextSlot();
-        }
+        toggleInventoryAction.action.performed += OnToggleInventory;
+        useQuickSlotAction.action.performed += OnUseQuickSlot;
+        cycleQuickSlotAction.action.performed += OnCycleQuickSlot;
 
-        // X 키 입력: 현재 선택된 퀵슬롯 아이템 사용
-        if (Input.GetKeyDown(useKey))
+        toggleInventoryAction.action.Enable();
+        useQuickSlotAction.action.Enable();
+        cycleQuickSlotAction.action.Enable();
+    }
+
+    private void OnDisable()
+    {
+        toggleInventoryAction.action.performed -= OnToggleInventory;
+        useQuickSlotAction.action.performed -= OnUseQuickSlot;
+        cycleQuickSlotAction.action.performed -= OnCycleQuickSlot;
+
+        toggleInventoryAction.action.Disable();
+        useQuickSlotAction.action.Disable();
+        cycleQuickSlotAction.action.Disable();
+    }
+
+    // ----------------------------------------------------
+    // [Input Action 이벤트 핸들러]
+    // ----------------------------------------------------
+    private void OnToggleInventory(InputAction.CallbackContext context)
+    {
+        ToggleInventoryAndQuickSlotUI();
+    }
+
+    private void OnUseQuickSlot(InputAction.CallbackContext context)
+    {
+        UseSelectedQuickSlotItem();
+    }
+
+    private void OnCycleQuickSlot(InputAction.CallbackContext context)
+    {
+        CycleNextSlot();
+    }
+
+    /// <summary>
+    /// Inventory 및 QuickSlot UI를 활성화/비활성화합니다.
+    /// </summary>
+    public void ToggleInventoryAndQuickSlotUI()
+    {
+        if (inventoryUIRoot != null)
         {
-            UseSelectedQuickSlotItem();
+            bool currentState = inventoryUIRoot.activeSelf;
+            inventoryUIRoot.SetActive(!currentState);
+
+            Debug.Log($"[QuickSlotManager] Inventory/QuickSlot UI Toggled to: {!currentState}");
+        }
+        else
+        {
+            Debug.LogWarning("[QuickSlotManager] inventoryUIRoot is null. Cannot toggle UI visibility directly.");
         }
     }
 
     /// <summary>
-    /// Y 버튼 (Cycle Key) 입력 시 다음 퀵슬롯을 선택합니다.
+    /// 다음 퀵슬롯을 선택합니다.
     /// </summary>
     public void CycleNextSlot()
     {
-        int previousIndex = selectedSlotIndex;
-
-        // 인덱스를 증가시키고, quickSlotCount (3)으로 나눈 나머지를 사용하여 순환시킵니다.
         selectedSlotIndex = (selectedSlotIndex + 1) % quickSlotCount;
 
         Debug.Log($"[QuickSlotManager] QuickSlot cycled. New selection index: {selectedSlotIndex}");
 
-        // UI 하이라이트 갱신
         RefreshQuickSlotHighlights();
     }
 
     /// <summary>
-    /// X 버튼 (Use Key) 입력 시 현재 선택된 퀵슬롯의 아이템을 사용합니다.
+    /// 현재 선택된 퀵슬롯의 아이템을 사용합니다.
     /// </summary>
     public void UseSelectedQuickSlotItem()
     {
-        InventorySlot slot = quickSlots[selectedSlotIndex];
+        InventorySlot slot = quickSlots[selectedSlotIndex]; // InventorySlot 직접 사용
 
         if (slot.IsEmpty)
         {
@@ -95,73 +146,75 @@ public class QuickSlotManager : MonoBehaviour
             return;
         }
 
-        // 이미 Consumable만 들어오도록 제한했지만, 안전을 위해 최종 확인합니다.
-        if (slot.itemData.itemType != ItemType.Consumable)
+        if (slot.itemData.itemType != ItemType.Consumable) // ItemType 직접 사용
         {
-            Debug.LogWarning($"[QuickSlotManager] Cannot use {slot.itemData.itemName}. It is not a Consumable.");
+            // Equipment/Weapon 아이템이 QuickSlot에 있으면 사용을 막고 경고를 줍니다.
+            Debug.LogWarning($"[QuickSlotManager] Cannot use {slot.itemData.itemName}. QuickSlot is reserved for Consumables.");
             return;
         }
 
-        // 1. 아이템 사용 로직 실행 (ConsumableItemSO의 Use() 메소드가 실행될 것을 기대)
-        // ItemBaseSO에 Use(int slotIndex) 함수가 virtual로 정의되어 있어야 합니다.
-        slot.itemData.Use(selectedSlotIndex + quickSlotStartIndex); // 인벤토리 전체 인덱스 전달
+        // ----------------------------------------------------
+        // 🔥 [로직] Inventory 클래스의 UseItem에 처리를 위임
+        // ----------------------------------------------------
 
-        // 2. 스택 개수 감소
-        slot.stackSize--;
+        // 퀵슬롯의 외부 인덱스 계산
+        int quickSlotExternalIndex = selectedSlotIndex + quickSlotStartIndex;
 
-        // 3. 스택이 0이 되면 슬롯을 비웁니다.
-        if (slot.stackSize <= 0)
+        // Inventory 클래스 인스턴스 참조
+        if (inventoryReference != null)
         {
-            quickSlots[selectedSlotIndex] = InventorySlot.Empty;
-            Debug.Log($"[QuickSlotManager] {slot.itemData.itemName} consumed. Slot {selectedSlotIndex} is now empty.");
+            // Inventory의 UseItem을 호출하여 효과 적용 및 재고 감소를 요청합니다.
+            bool success = inventoryReference.UseItem(quickSlotExternalIndex);
+
+            if (success)
+            {
+                Debug.Log($"[QuickSlotManager] Consumable item use requested to Inventory for external index {quickSlotExternalIndex}.");
+            }
+            else
+            {
+                Debug.LogError($"[QuickSlotManager] Inventory.UseItem failed for quick slot {quickSlotExternalIndex}.");
+            }
         }
         else
         {
-            quickSlots[selectedSlotIndex] = slot;
-            Debug.Log($"[QuickSlotManager] {slot.itemData.itemName} consumed. Remaining stack: {slot.stackSize}");
+            // 이 로그가 발생하면, Inspector에서 inventoryReference를 연결해야 합니다.
+            Debug.LogError("[QuickSlotManager] Inventory instance is null. Cannot use item. Please check the Inspector assignment.");
         }
 
-        // 4. UI 갱신
+        // Inventory에서 quickSlots 배열을 업데이트했으므로, UI만 갱신합니다.
         RefreshAllQuickSlotUI();
     }
 
     // ----------------------------------------------------
     // [UI 갱신 로직]
     // ----------------------------------------------------
-
-    /// <summary>
-    /// QuickSlot UI의 하이라이트 상태를 갱신합니다.
-    /// </summary>
     private void RefreshQuickSlotHighlights()
     {
-        if (quickSlotUIs == null || quickSlotUIs.Length == 0) return;
+        if (quickSlotUIReferences == null || quickSlotUIReferences.Length == 0) return;
 
         for (int i = 0; i < quickSlotCount; i++)
         {
-            if (quickSlotUIs[i] != null)
+            if (quickSlotUIReferences[i] != null)
             {
                 bool isSelected = (i == selectedSlotIndex);
-                // SlotUIUpdater에 있는 SetHighlight 함수를 호출하여 초록색 하이라이트를 적용합니다.
-                quickSlotUIs[i].SetHighlight(isSelected, selectedHighlightColor);
+                // SlotUIUpdater 클래스에 SetHighlight 함수가 있다고 가정
+                quickSlotUIReferences[i].SetHighlight(isSelected);
             }
         }
     }
 
-
-    /// <summary>
-    /// QuickSlot UI를 전체 갱신합니다.
-    /// </summary>
-    private void RefreshAllQuickSlotUI()
+    public void RefreshAllQuickSlotUI() // Inventory.cs에서 호출되도록 public으로 변경
     {
-        if (quickSlotUIs == null) return;
+        if (quickSlotUIReferences == null) return;
 
-        int updateCount = Mathf.Min(quickSlotCount, quickSlotUIs.Length);
+        int updateCount = Mathf.Min(quickSlotCount, quickSlotUIReferences.Length);
 
         for (int i = 0; i < updateCount; i++)
         {
-            if (quickSlotUIs[i] != null)
+            if (quickSlotUIReferences[i] != null)
             {
-                quickSlotUIs[i].UpdateSlotUI(quickSlots[i].itemData, quickSlots[i].stackSize);
+                // ItemBaseSO, stackSize 사용
+                quickSlotUIReferences[i].UpdateSlotUI(quickSlots[i].itemData, quickSlots[i].stackSize);
             }
         }
     }
@@ -169,19 +222,11 @@ public class QuickSlotManager : MonoBehaviour
     // ----------------------------------------------------
     // [Inventory.cs 에서 호출되는 필수 함수]
     // ----------------------------------------------------
-    // (기존의 유효성 검사 및 스왑 로직 유지)
-
-    /// <summary>
-    /// 인덱스가 QuickSlot 영역에 속하는지 확인합니다.
-    /// </summary>
     public bool IsQuickSlotIndex(int index)
     {
         return index >= quickSlotStartIndex && index < quickSlotStartIndex + quickSlotCount;
     }
 
-    /// <summary>
-    /// 퀵슬롯 인덱스에 아이템이 없는지 확인합니다. (Inventory.cs에서 호출됨)
-    /// </summary>
     public bool IsQuickSlotEmpty(int index)
     {
         if (!IsQuickSlotIndex(index)) return true;
@@ -196,15 +241,12 @@ public class QuickSlotManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 퀵슬롯에 오직 Consumable만 허용하고, 다른 모든 타입은 금지합니다.
-    /// </summary>
-    private bool IsItemForbiddenInQuickSlot(ItemBaseSO itemData)
+    private bool IsItemForbiddenInQuickSlot(ItemBaseSO itemData) // ItemBaseSO 직접 사용
     {
         if (itemData == null) return false;
 
         // 아이템 타입이 Consumable이 아닌 경우, 즉시 진입 금지 처리
-        if (itemData.itemType != ItemType.Consumable)
+        if (itemData.itemType != ItemType.Consumable) // ItemType 직접 사용
         {
             return true;
         }
@@ -212,18 +254,17 @@ public class QuickSlotManager : MonoBehaviour
         return false;
     }
 
-
     /// <summary>
     /// 인벤토리 슬롯과 퀵슬롯 간의 아이템 교환을 처리합니다.
     /// </summary>
     public void HandleInventorySwap(int indexA, int indexB)
     {
-        // [참고] Inventory 클래스와 RefreshAllInventoryUI() 메서드가 필요합니다.
-        // Inventory 클래스가 싱글톤으로 존재하고 slots 배열이 있다고 가정합니다.
-        Inventory inventory = Inventory.Instance;
-        if (inventory == null)
+        Inventory inventoryInstance = inventoryReference;
+
+        if (inventoryInstance == null)
         {
-            Debug.LogError("[QuickSlotManager] Inventory.Instance is null. Cannot perform swap.");
+            // 🔥 이 로그가 발생하면 Inspector에서 inventoryReference를 연결해야 합니다.
+            Debug.LogError("[QuickSlotManager] Inventory instance is null. Cannot perform swap.");
             return;
         }
 
@@ -246,8 +287,11 @@ public class QuickSlotManager : MonoBehaviour
 
 
         // 3. 현재 데이터 가져오기 
-        InventorySlot slotA_Data = aIsQuick ? quickSlots[aInternalIndex] : inventory.slots[aInternalIndex];
-        InventorySlot slotB_Data = bIsQuick ? quickSlots[bInternalIndex] : inventory.slots[bInternalIndex];
+        // 퀵슬롯 데이터에 접근할 때는 internalIndex를 사용합니다.
+        // 인벤토리 데이터에 접근할 때는 indexA/indexB가 이미 인벤토리 배열의 인덱스이므로,
+        // 이를 aInternalIndex/bInternalIndex로 사용하는 것이 맞습니다.
+        InventorySlot slotA_Data = aIsQuick ? quickSlots[aInternalIndex] : inventoryInstance.slots[aInternalIndex];
+        InventorySlot slotB_Data = bIsQuick ? quickSlots[bInternalIndex] : inventoryInstance.slots[bInternalIndex];
 
         // ----------------------------------------------------
         // ⭐ [핵심 로직] 퀵슬롯 진입 유효성 검사 (ItemType 기반)
@@ -275,7 +319,6 @@ public class QuickSlotManager : MonoBehaviour
             }
         }
 
-        // 퀵슬롯 간의 교환 (aIsQuick && bIsQuick) 또는 인벤토리 내 교환은 유효성 검사 없이 허용됩니다.
 
         // ----------------------------------------------------
         // 4. 데이터 교환 (유효성 검사 통과 후)
@@ -288,7 +331,7 @@ public class QuickSlotManager : MonoBehaviour
         }
         else
         {
-            inventory.slots[aInternalIndex] = slotB_Data;
+            inventoryInstance.slots[aInternalIndex] = slotB_Data;
         }
 
         // B 위치에 A 데이터를 덮어씌우기
@@ -298,7 +341,7 @@ public class QuickSlotManager : MonoBehaviour
         }
         else
         {
-            inventory.slots[bInternalIndex] = slotA_Data;
+            inventoryInstance.slots[bInternalIndex] = slotA_Data;
         }
 
         Debug.Log($"[QuickSlotManager] Swap Executed: Inventory/QuickSlot Indices ({indexA} <-> {indexB})");
@@ -306,10 +349,12 @@ public class QuickSlotManager : MonoBehaviour
         // 5. UI 갱신
         if (!aIsQuick || !bIsQuick)
         {
-            inventory.RefreshAllInventoryUI();
+            // 인벤토리의 해당 슬롯 인덱스가 변경되었으므로 전체 UI를 갱신합니다.
+            inventoryInstance.RefreshAllInventoryUI();
         }
 
+        // 퀵슬롯 UI 갱신
         RefreshAllQuickSlotUI();
-        RefreshQuickSlotHighlights(); // 아이템 교환 후에도 하이라이트를 유지해야 합니다.
+        RefreshQuickSlotHighlights();
     }
 }
