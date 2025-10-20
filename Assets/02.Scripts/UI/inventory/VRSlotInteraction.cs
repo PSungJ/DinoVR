@@ -12,7 +12,8 @@ public class VRSlotInteraction : MonoBehaviour
     [SerializeField] private int slotIndex = -1;
 
     private Image slotImage;
-    private XRGrabInteractable grabInteractable;
+    // ⭐ 변경: CustomSlotGrabInteractable로 타입 변경
+    private CustomSlotGrabInteractable grabInteractable;
     private Collider slotCollider;
     private SlotUIUpdater uiUpdater;
 
@@ -47,7 +48,8 @@ public class VRSlotInteraction : MonoBehaviour
     {
         // 1. 컴포넌트 가져오기
         slotImage = GetComponent<Image>();
-        grabInteractable = GetComponentInChildren<XRGrabInteractable>();
+        // ⭐ 변경: CustomSlotGrabInteractable로 가져옵니다.
+        grabInteractable = GetComponentInChildren<CustomSlotGrabInteractable>();
         slotCollider = GetComponent<Collider>();
         uiUpdater = GetComponent<SlotUIUpdater>();
 
@@ -57,10 +59,11 @@ public class VRSlotInteraction : MonoBehaviour
             return;
         }
 
-        // ⭐ [FIX]: 빈 슬롯 Grab 방지 로직 추가 (Select 시도 전에 호출되어 Grab 가능 여부를 판단)
+        // ⭐ [FIX]: CustomSlotGrabInteractable에 인덱스 전달
         if (grabInteractable != null)
         {
-            grabInteractable.selectEnterChecking = (interactor) => CanSelectOverride(interactor);
+            grabInteractable.slotIndex = this.slotIndex;
+            // grabInteractable.selectEnterChecking = (interactor) => CanSelectOverride(interactor); (오류 코드 제거)
         }
 
         // 2. 부모/위치/회전 저장
@@ -113,9 +116,9 @@ public class VRSlotInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// ⭐ [FIX] XRGrabInteractable의 Select 시도 전에 호출되어 Grab 가능 여부를 판단합니다.
-    /// 빈 슬롯인 경우 false를 반환하여 Grab 자체를 막습니다.
+    /// ⭐ [제거] 이 함수는 CustomSlotGrabInteractable.IsSelectableBy로 대체되었습니다.
     /// </summary>
+    /*
     private bool CanSelectOverride(IXRSelectInteractor interactor)
     {
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
@@ -124,6 +127,7 @@ public class VRSlotInteraction : MonoBehaviour
         }
         return true;
     }
+    */
 
 
     // [재귀 함수] 오브젝트와 모든 자식의 Layer를 변경합니다.
@@ -236,8 +240,7 @@ public class VRSlotInteraction : MonoBehaviour
     // --- (Select/Grab 로직) ---
     public void OnSelectStart(SelectEnterEventArgs args)
     {
-        // ⭐ [CLEANUP] 빈 슬롯 확인 로직은 이제 CanSelectOverride에서 처리됩니다.
-        // 이 함수가 호출된다는 것은 이미 아이템이 있다는 뜻입니다.
+        // ⭐ [CLEANUP] 빈 슬롯 확인 로직은 이제 CustomSlotGrabInteractable에서 처리됩니다.
 
         grabbedIndex = this.slotIndex;
 
@@ -309,7 +312,6 @@ public class VRSlotInteraction : MonoBehaviour
             flashTarget = targetSlotInstance;
 
             // ⭐ [CRITICAL FIX] 타겟 슬롯의 물리/상호작용 상태를 강제로 복원합니다.
-            // 인벤토리 데이터가 갱신되었으므로, 해당 슬롯이 제자리를 찾도록 합니다.
             targetSlotInstance.RestoreSlotVisualAndPhysics();
         }
 
@@ -369,7 +371,7 @@ public class VRSlotInteraction : MonoBehaviour
 
     public void OnActivatedForUse(ActivateEventArgs args)
     {
-        // 사용 시도 전, 빈 슬롯 여부 확인
+        // 사용 시도 전, 빈 슬롯 여부 확인 (이중 확인)
         if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
             return;
@@ -399,8 +401,7 @@ public class VRSlotInteraction : MonoBehaviour
             grabInteractable.activated.RemoveListener(OnActivatedForUse);
             grabInteractable.selectEntered.RemoveListener(OnSelectStartedOverrideParenting);
 
-            // ⭐ [CLEANUP] 추가된 selectEnterChecking 해제 (GC 문제 방지)
-            grabInteractable.selectEnterChecking = null;
+            // ⭐ [CLEANUP] selectEnterChecking 대신 사용된 CustomGrabInteractable의 참조는 자동으로 GC됩니다.
         }
 
         // 인스턴스 등록 해제
