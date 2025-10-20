@@ -264,12 +264,14 @@ public class Inventory : MonoBehaviour
     {
         slots[slotIndex] = InventorySlot.Empty;
 
-        // EquippableItemSO oldItem = equipmentManager.Equip(equipItem); // 실제 로직은 그대로 둡니다.
+        // 🔥 수정된 부분: Equip 함수에 slotIndex 인수를 추가하여 호출합니다.
+        EquippableItemSO oldItem = equipmentManager.Equip(equipItem, slotIndex);
 
-        // if (oldItem != null)
-        // {
-        //     slots[slotIndex] = new InventorySlot(oldItem, 1); // 실제 로직은 그대로 둡니다.
-        // }
+        if (oldItem != null)
+        {
+            // 이전 장비 아이템을 다시 인벤토리의 해당 슬롯에 되돌려 놓습니다.
+            slots[slotIndex] = new InventorySlot(oldItem, 1);
+        }
 
         RefreshAllInventoryUI();
         return true;
