@@ -45,7 +45,7 @@ public class QuickSlotManager : MonoBehaviour
     {
         // quickSlots 배열 초기화 (퀵슬롯 개수만큼)
         quickSlots = new InventorySlot[quickSlotCount]; // InventorySlot 직접 사용
-        for (int i = 0 < quickSlotCount; i++)
+        for (int i = 0; i< quickSlotCount; i++)
         {
             quickSlots[i] = InventorySlot.Empty; // InventorySlot.Empty 직접 사용
         }
@@ -218,7 +218,26 @@ public class QuickSlotManager : MonoBehaviour
             }
         }
     }
+    // Inventory에서 호출되어 퀵슬롯 인덱스를 사용하여 아이템을 사용합니다.
+    public bool HandleQuickSlotUse(int absoluteIndex)
+    {
+        // Inventory capacity를 사용하여 상대 인덱스를 계산합니다.
+        // QuickSlotManager가 Inventory capacity를 알지 못한다면, 
+        // IsQuickSlotIndex와 HandleInventorySwap에서 사용하는 동일한 계산 로직을 사용해야 합니다.
 
+        // 예시: 퀵슬롯 인덱스는 30, 31, 32 이고 퀵슬롯 개수는 3개라고 가정합니다.
+        int quickSlotRelativeIndex = absoluteIndex - Inventory.Instance.Capacity;
+
+        if (quickSlotRelativeIndex < 0 || quickSlotRelativeIndex >= quickSlots.Length)
+        {
+            Debug.LogError($"[QuickSlotManager] HandleQuickSlotUse failed: Invalid relative index {quickSlotRelativeIndex}.");
+            return false;
+        }
+
+        // 이제 QuickSlotManager의 기존 아이템 사용 로직을 호출하거나 새로 구현합니다.
+        // (이 로직은 퀵슬롯의 아이템을 사용하고, 성공 시 QuickSlotManager의 UI를 갱신해야 합니다.)
+        return UseItemFromRelativeQuickSlotIndex(quickSlotRelativeIndex);
+    }
     // ----------------------------------------------------
     // [Inventory.cs 에서 호출되는 필수 함수]
     // ----------------------------------------------------
@@ -357,4 +376,5 @@ public class QuickSlotManager : MonoBehaviour
         RefreshAllQuickSlotUI();
         RefreshQuickSlotHighlights();
     }
+
 }

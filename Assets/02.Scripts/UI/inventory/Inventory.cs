@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Linq;
+using System; // InventorySlot 사용을 위해 추가
 
 // InventorySlot, ItemBaseSO 등 외부 정의는 생략합니다.
 
@@ -10,6 +11,10 @@ public class Inventory : MonoBehaviour
 
     [Header("Dependencies")]
     [SerializeField] private int capacity = 30;
+
+    // ⭐ [FIX: 외부에서 capacity를 읽을 수 있도록 public Capacity 속성 추가]
+    public int Capacity => capacity;
+
     [SerializeField] private EquipmentManager equipmentManager;
     [SerializeField] private QuickSlotManager quickSlotManager;
 
@@ -65,7 +70,7 @@ public class Inventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 🔥 [핵심 수정] 특정 인덱스의 슬롯에 아이템이 없는지 확인합니다. 퀵슬롯 인덱스도 처리합니다.
+    /// 🔥 특정 인덱스의 슬롯에 아이템이 없는지 확인합니다. 퀵슬롯 인덱스도 처리합니다.
     /// </summary>
     public bool IsSlotEmpty(int index)
     {
@@ -79,6 +84,7 @@ public class Inventory : MonoBehaviour
         if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(index))
         {
             // QuickSlotManager.IsQuickSlotEmpty를 호출하여 실제 퀵슬롯 데이터 확인
+            // quickSlotManager가 IsQuickSlotEmpty를 구현하고 capacity를 사용한다고 가정
             return quickSlotManager.IsQuickSlotEmpty(index);
         }
 
@@ -181,7 +187,19 @@ public class Inventory : MonoBehaviour
 
     public bool UseItem(int slotIndex)
     {
-        if (slotIndex < 0 || slotIndex >= capacity || slots[slotIndex].IsEmpty) return false;
+        // ⭐ [퀵슬롯 위임 로직] 인덱스가 퀵슬롯 범위에 속하는지 확인하고 위임합니다.
+        if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(slotIndex))
+        {
+            Debug.Log($"[Inventory] UseItem Delegated to QuickSlotManager for index: {slotIndex}");
+            return quickSlotManager.HandleQuickSlotUse(slotIndex);
+        }
+
+        // [메인 인벤토리 로직] 인덱스가 메인 인벤토리 범위 내에 있는지, 비어있지 않은지 확인합니다.
+        if (slotIndex < 0 || slotIndex >= capacity || slots[slotIndex].IsEmpty)
+        {
+            Debug.LogWarning($"[Inventory] UseItem failed: Index {slotIndex} is outside main inventory bounds or is empty.");
+            return false;
+        }
 
         ItemBaseSO item = slots[slotIndex].itemData;
 
@@ -209,13 +227,14 @@ public class Inventory : MonoBehaviour
         return false;
     }
 
-    // V------------------ [수정된 SwapSlots 함수: QuickSlot Manager 연동 로직 우선 처리] ------------------V
     /// <summary>
     /// 두 인벤토리 슬롯의 아이템 위치를 서로 교환합니다.
     /// QuickSlotManager가 연결되어 있으면 QuickSlot과의 교환도 처리합니다.
     /// </summary>
     public void SwapSlots(int indexA, int indexB)
     {
+        if (indexA == indexB) return;
+
         // 1. QuickSlotManager 연동 확인 (가장 먼저 수행)
         bool isAQuickSlot = false;
         bool isBQuickSlot = false;
@@ -238,7 +257,6 @@ public class Inventory : MonoBehaviour
         }
 
         // 2. 순수 인벤토리 슬롯 간의 교환 (위임 실패 또는 퀵슬롯이 아닌 경우)
-
         // 유효성 검사를 이 시점에 다시 수행합니다. (순수 인벤토리 범위 내인지 확인)
         if (indexA < 0 || indexA >= capacity || indexB < 0 || indexB >= capacity)
         {
@@ -254,7 +272,6 @@ public class Inventory : MonoBehaviour
         Debug.Log($"[Inventory] Swap Success: Slot {indexA} <-> Slot {indexB} (Internal Inventory Swap)");
         RefreshAllInventoryUI();
     }
-    // A-----------------------------------------------------------------------------A
 
     // ----------------------------------------------------
     // [내부 호출 함수]
