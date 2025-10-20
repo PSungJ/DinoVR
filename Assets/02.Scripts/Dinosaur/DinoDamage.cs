@@ -22,7 +22,7 @@ public class DinoDamage : MonoBehaviour
         }
     }
 
-    public void Damage(Collider col, float damage)
+    public void Damage(Collider col, float damage, bool isPlayer = false)
     {
         if (col.tag == "Head")
             damage *= 1.5f;
@@ -34,6 +34,11 @@ public class DinoDamage : MonoBehaviour
         {
             if (c.GetComponent<DinoAttack>() == null)
                 c.enabled = false;
+        }
+                        // 상대가 플레이어 라면
+        if (isPlayer)
+        {
+            //status.fearOrigin = player
         }
     }
 }

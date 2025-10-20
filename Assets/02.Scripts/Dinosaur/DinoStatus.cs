@@ -8,7 +8,6 @@ public class DinoStatus : MonoBehaviour
     [Header("스테이터스")]
     public float hpMax = 100;           // 체력
     public float hungerMax = 100;       // 최대 배고픔
-    public float thirstMax = 100;       // 최대 갈증
     public float walkSpeed = 2;         // 걷는 속도
     public float runSpeed = 4;         // 뛰는 속도
     public float rotationSpeed = 1f;    // 회전 속도
@@ -37,6 +36,7 @@ public class DinoStatus : MonoBehaviour
 
     DinoBase dino;
 
+    float lastHealTime;
     float lastFearTime;
 
     [Tooltip("육식여부")]
@@ -61,7 +61,6 @@ public class DinoStatus : MonoBehaviour
         moveSpeedCurrent = walkSpeed;
         fearCurrent = 0;
         hungerCurrent = hungerMax;
-        thirstCurrent = thirstMax;
 
         lastFearTime = Time.time;
 
@@ -85,7 +84,13 @@ public class DinoStatus : MonoBehaviour
                 hungerCurrent -= 0.1f;
             if (fearCurrent > 0 && Time.time - lastFearTime >= fearReduceInterval)
             {
-                fearCurrent -= 1f;
+                fearCurrent =  Mathf.Clamp(fearCurrent - fearThreshold * 0.01f, 0, fearThreshold);
+                if (fearCurrent == 0)
+                    fearOrigin = null;
+            }
+            if(hpCurrent < hpMax && hungerCurrent > 0f  && Time.time - lastHealTime >= 1f)
+            {
+                hpCurrent = Mathf.Clamp(hpCurrent + 0.1f, 0, hpMax);
             }
 
             Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * detactRange, awareness, LayerMask.GetMask("Dinosaur"));
@@ -99,7 +104,7 @@ public class DinoStatus : MonoBehaviour
                     {
                         if(isFoodMeat && stat.threat < threat)
                         {
-                            if(stat.isDie)
+                            if(stat.isDie == true)
                                 meatList.Add(col.transform);
                             else
                                 targetList.Add(col.transform);
@@ -108,6 +113,15 @@ public class DinoStatus : MonoBehaviour
                     }
                     AddFear(stat.threat, col.transform);
                 }
+
+                
+                // 플레이어 인식해서 타겟에 추가하기
+
+                // Player player = col.GetCompoent<Player>();
+                // if (player != null)
+                // targetList.Add(col.transform);
+
+
             }
             if (isFoodMeat) // 육식공룡 이라면
             {
@@ -172,8 +186,6 @@ public class DinoStatus : MonoBehaviour
                 nearestDistSqr = distSqr;
             }
         }
-        if (nearest == null && target != null)
-            nearest = target;        
         return nearest;
     }
 }

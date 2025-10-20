@@ -19,9 +19,9 @@ public class DinoRaptor : DinoBase
             }
         }
 
-        if (status.fearCurrent <= 0 && status.target != null) // 공포가 0 이라면 == 사냥
+        if (status.fearCurrent <= 0 && status.target != null) // 공포가 0 이고, 타겟이 존재하면
         {
-            if (!IsLive(status.target))
+            if (!IsLive(status.target)) // 타겟이 죽어있다면 리턴
             {
                 ResetTarget();
                 return;
@@ -39,7 +39,7 @@ public class DinoRaptor : DinoBase
                 }
             }
         }
-        else if (status.fearOrigin != null)
+        else if (status.fearOrigin != null && status.fearCurrent > 0)
         {
             float dis = (status.fearOrigin.position - transform.position).magnitude;
             if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
@@ -48,7 +48,7 @@ public class DinoRaptor : DinoBase
                 if (status.IsAfraid())
                     StartFleeing();
                 else if (status.fearCurrent >= status.fearThreshold * 0.2f)
-                    StartFleeing();
+                    ChangeState(DinoState.ROAR);
             }
             else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
             {
@@ -57,7 +57,7 @@ public class DinoRaptor : DinoBase
         }
         else if (status.fearCurrent <= 0)
         {
-            ChangeState(DinoState.IDLE);
+            ResetTarget();
         }
     }
 
@@ -66,6 +66,12 @@ public class DinoRaptor : DinoBase
     public override void Chasing()
     {
         agent.speed = status.runSpeed;
+
+        if (status.IsAfraid())
+        {
+            StartFleeing();
+            return;
+        }
 
         if (status.target == null)
         {
@@ -137,7 +143,7 @@ public class DinoRaptor : DinoBase
 
     public void Calling()
     {
-        Collider[] raptors = Physics.OverlapSphere(transform.position, 30f, LayerMask.GetMask("Dinosaur"));
+        Collider[] raptors = Physics.OverlapSphere(transform.position, 80f, LayerMask.GetMask("Dinosaur"));
         foreach (Collider col in raptors)
         {
             if (col.gameObject == gameObject) continue; // 자기 자신 제외
@@ -146,7 +152,7 @@ public class DinoRaptor : DinoBase
                 if (stat.threat == status.threat)
                 {
                     col.TryGetComponent<DinoBase>(out DinoBase raptor);
-                    if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING)
+                    if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING && raptor.currentState != DinoState.ATTACKING)
                     {
                         stat.target = status.target;
                         raptor.ChangeState(DinoState.CALL);
