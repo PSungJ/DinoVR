@@ -23,20 +23,27 @@ public class DinoAttack : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         var enemy = other.GetComponentInParent<DinoDamage>();
-        if (enemy == null)  // 상대가 공룡이 아니라면 리턴
-            return;
-        else 
+        if (enemy != null)  // 상대가 공룡이라면
         {
             var enemyStat = enemy.GetComponent<DinoStatus>();
-            if (enemyStat.threat == status.threat)  // 상태가 공룡인데 같은 종이면 리턴
+            if (enemyStat.threat == status.threat)      // 상태가 공룡인데 같은 종이면 리턴
                 return;
+
+            if (!hitList.Contains(enemy))
+            {
+                CancelInvoke("ResetAttack");
+                Invoke("ResetAttack", 1f);
+                enemy.Damage(other, damage);
+                hitList.Add(enemy);
+            }
         }
-        if (!hitList.Contains(enemy))
+        else                // 상대가 플레이어 라면
         {
-            CancelInvoke("ResetAttack");
-            Invoke("ResetAttack", 1f);
-            enemy.Damage(other, damage);
-            hitList.Add(enemy);
+            // var player = other.GetComponent<Player>();
+            // if (player != null)
+            //{
+            //    player.Damage();
+            //}
         }
     }
 
