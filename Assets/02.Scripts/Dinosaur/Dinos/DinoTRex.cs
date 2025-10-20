@@ -17,9 +17,7 @@ public class DinoTrex : DinoBase
         if(agent.hasPath)
             agent.ResetPath();
 
-        searchingTime += Time.deltaTime;
-
-        if (status.hungerCurrent > status.stats.hungerMax / 2f || searchingTime >= 10f)
+        if (status.hungerCurrent > status.hungerMax / 2f)
         {
             if (status.target != null)
             {
@@ -34,19 +32,14 @@ public class DinoTrex : DinoBase
                 ResetTarget();
                 return;
             }
-            RotateSmoothly(status.target.position - transform.position);
-            currentAttackTime += Time.deltaTime;
-            if (currentAttackTime >= toAttackTime)
+            float dis = (status.target.position - transform.position).magnitude;
+            if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
-                currentAttackTime = 0f;
-                float dis = (status.target.position - transform.position).magnitude;
-                if (status.meat != null && dis > status.stats.detactRange / 2f)    // 먹을게 있는데 멀리서 다가온다면
+                RotateSmoothly(status.target.position - transform.position);
+                currentAttackTime += Time.deltaTime;
+                if (currentAttackTime >= toAttackTime)
                 {
-                    if(Time.time - lastRoarTime >= 10f)
-                        ChangeState(DinoState.ROAR);
-                }
-                else
-                {
+                    currentAttackTime = 0f;
                     DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
                     if (targetStat != null)
                     {
@@ -61,28 +54,27 @@ public class DinoTrex : DinoBase
                     }
                 }
             }
-            
         }
         else if (status.fearOrigin != null && status.fearCurrent > 0)
         {
             float dis = Vector3.Distance(status.fearOrigin.position, transform.position);
-            if (dis > status.stats.detactRange * 0.8f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            if (dis > status.detactRange * 0.8f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
                 RotateSmoothly(status.fearOrigin.position - transform.position);
                 if (status.IsAfraid())
                     StartFleeing();
-                else if (status.fearCurrent >= (status.stats.fearThreshold * 0.05f) && Time.time - lastRoarTime >= 10f)
+                else if (status.fearCurrent >= (status.fearThreshold * 0.05f) && Time.time - lastRoarTime >= 10f)
                 {
                     ChangeState(DinoState.ROAR);
                     DinoStatus fearStat = status.fearOrigin.GetComponent<DinoStatus>();
                     if (fearStat != null)
                     {
-                        fearStat.AddFear(status.stats.threat * 100f, transform);
+                        fearStat.AddFear(status.threat * 100f, transform);
                     }
                 }
                 //Debug.Log($"{status.fearCurrent}, {status.fearThreshold * 0.05f}, {Time.time - lastRoarTime}");
             }
-            else if (dis > status.stats.attackRange * 2f)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
+            else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
             {
                 if (status.IsAfraid())
                     StartFleeing();
@@ -100,10 +92,6 @@ public class DinoTrex : DinoBase
                     }
                 }
             }
-            else
-            {
-                ChangeState(DinoState.CHASING);
-            }
         }
         else if (status.fearCurrent <= 0)
         {
@@ -120,12 +108,11 @@ public class DinoTrex : DinoBase
         foreach (Collider col in dinos)
         {
             if (col.gameObject == gameObject) continue; // 자기 자신 제외
-            DinoStatus stat = col.GetComponent<DinoStatus>();
-            if (stat != null)
+            if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
             {
-                if (stat.stats.threat < status.stats.threat)
+                if (stat.threat < status.threat)
                 {
-                    stat.AddFear(status.stats.threat , transform);
+                    stat.AddFear(status.threat , transform);
                 }
             }
         }
@@ -135,11 +122,11 @@ public class DinoTrex : DinoBase
             if (status.IsAfraid())                      // 공포상태라면 도망
                 StartFleeing();
             // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
-            else if (status.fearOrigin != null && Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
+            else if (status.fearOrigin != null && Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
             {
                 ChangeState(DinoState.ATTACKING);
             }
-            else if (status.target != null && Vector3.Distance(transform.position, status.target.position) <= status.stats.attackRange)
+            else if (status.target != null && Vector3.Distance(transform.position, status.target.position) <= status.attackRange)
             {
                 ChangeState(DinoState.ATTACKING);
             }
@@ -157,18 +144,12 @@ public class DinoTrex : DinoBase
             ChangeState(DinoState.IDLE);
             return;
         }
-        else if (Vector3.Distance(status.target.position, transform.position) > status.stats.awareness)   // 너무 멀어지면 포기
+        else if (Vector3.Distance(status.target.position, transform.position) > status.awareness)   // 너무 멀어지면 포기
         {
-            chaseTime += ((status.hungerCurrent) / status.stats.hungerMax) * Time.deltaTime;
-            chaseTime += status.meat != null ? 2f : 0f;
-            if (chaseTime > 20f)
-            {
-                chaseTime = 0f;
-                ResetTarget();
-                return;
-            }
+            ChangeState(DinoState.IDLE);
+            return;
         }
-        agent.speed = status.stats.walkSpeed / 2;
+        agent.speed = status.walkSpeed / 2;
         agent.destination = status.target.position;
         DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
         if (targetStat != null)
@@ -187,7 +168,7 @@ public class DinoTrex : DinoBase
     public override void Attack()
     {
         base.Attack();
-        if (Vector3.Distance(transform.position, status.target.position) > status.stats.attackRange * 0.8f)
+        if (Vector3.Distance(transform.position, status.target.position) > status.attackRange * 0.8f)
         {
             animator.SetTrigger(_aniAttack);        // 공격 애니메이션 재생
             if (!agent.hasPath)

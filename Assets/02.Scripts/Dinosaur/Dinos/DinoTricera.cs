@@ -20,11 +20,6 @@ public class DinoTricera : DinoBase
         base.Eating();
     }
 
-    public override void Drink()
-    {
-        base.Drink();
-    }
-
     public override void Sleeping()
     {
         base.Sleeping();
