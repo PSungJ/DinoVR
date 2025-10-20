@@ -1,93 +1,122 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 공룡, 나뭇가지, 돌 등 모든 오브젝트를 풀링으로 관리하는 매니저.
+/// 씬에 단 하나만 존재해야 하며, PoolingManager.Instance 로 접근.
+/// </summary>
 public class PoolingManager : MonoBehaviour
 {
-    // 싱글톤으로 전역에서 접근
     public static PoolingManager Instance { get; private set; }
 
     [System.Serializable]
-    public class DinoPool
+    public class ObjectPool
     {
-        public string dinokey;          // 풀 식별자, 예: "Raptor"
-        public GameObject dinoPrefab;   // 풀링할 프리팹
-        public int size;                // 초기 생성 개수
+        public string key;         // 풀의 식별자 (예: "Raptor", "Branch", "Rock")
+        public GameObject prefab;  // 해당 오브젝트의 프리팹
+        public int size;           // 초기 생성 개수
     }
-    [SerializeField] private List<DinoPool> pools;  // 인스펙터에서 풀들을 설정
+
+    [Header("풀 목록 설정 (Inspector에서 설정)")]
+    [SerializeField] private List<ObjectPool> pools = new List<ObjectPool>();
+
+    // key별로 오브젝트 큐를 저장하는 딕셔너리
     private Dictionary<string, Queue<GameObject>> poolDictionary;
 
     private void Awake()
     {
+        // 싱글톤 설정
         if (Instance == null)
             Instance = this;
-        InitializeDino();
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        InitializePools();
     }
 
-    //=================== 공룡 Pooling ===================
-    private void InitializeDino()
+    /// <summary>
+    /// 인스펙터에서 등록된 풀들을 초기화
+    /// </summary>
+    private void InitializePools()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
 
-        // 모든 풀을 초기화: size만큼 비활성화된 오브젝트를 생성하여 큐에 넣음
         foreach (var pool in pools)
         {
             Queue<GameObject> objectPool = new Queue<GameObject>();
+
+            // 초기 오브젝트 생성
             for (int i = 0; i < pool.size; i++)
             {
-                GameObject obj = Instantiate(pool.dinoPrefab);
+                GameObject obj = Instantiate(pool.prefab);
                 obj.SetActive(false);
-
-                // 하이라키 정리용으로 PoolingManager를 부모로 할당
                 obj.transform.SetParent(this.transform);
                 objectPool.Enqueue(obj);
             }
-            // key 중복시 경고
-            if (poolDictionary.ContainsKey(pool.dinokey))
-                Debug.LogWarning($"Key 중복 : {pool.dinokey}");
+
+            // 키 중복 체크
+            if (poolDictionary.ContainsKey(pool.key))
+                Debug.LogWarning($"Key 중복 : {pool.key}");
             else
-                poolDictionary.Add(pool.dinokey, objectPool);
+                poolDictionary.Add(pool.key, objectPool);
         }
     }
 
-    // Enqueue 후 바로 다시 넣는(원형) 방식
-    // 주의: 이 방식은 "라운드로빈"처럼 동작하지만, 풀 크기가 작으면
-    // 이미 활성화된 오브젝트를 다시 꺼내게 되어 문제(겹침)가 생길 수 있음.
-    public GameObject SpawnFromPool(string dinokey, Vector3 pos, Quaternion rot)
+    /// <summary>
+    /// 풀에서 오브젝트를 꺼내서 지정 위치에 배치
+    /// </summary>
+    public GameObject SpawnFromPool(string key, Vector3 pos, Quaternion rot, Transform parent = null)
     {
-        if (!poolDictionary.ContainsKey(dinokey))
+        if (!poolDictionary.ContainsKey(key))
         {
-            Debug.LogWarning($"{dinokey}가 없습니다.");
+            Debug.LogWarning($"[PoolingManager] '{key}' 풀을 찾을 수 없습니다.");
             return null;
         }
-        GameObject objectToSpawn = poolDictionary[dinokey].Dequeue();
+
+        var queue = poolDictionary[key];
+        GameObject objectToSpawn = queue.Count > 0 ? queue.Dequeue() : InstantiateFallback(key);
+
+        if (objectToSpawn == null) return null;
 
         objectToSpawn.SetActive(true);
-        objectToSpawn.transform.position = pos;
-        objectToSpawn.transform.rotation = rot;
-
-        // 즉시 다시 큐에 넣음: 사용 후 반환을 별도로 호출하지 않는 간단한 패턴
-        poolDictionary[dinokey].Enqueue(objectToSpawn);
-
+        objectToSpawn.transform.SetPositionAndRotation(pos, rot);
+        objectToSpawn.transform.SetParent(parent ?? this.transform);
         return objectToSpawn;
     }
 
-    // 명시적으로 반환하는 방식의 메서드
-    // 예: PoolingManager.Instance.ReturnToPool("Raptor", gameObject);
+    /// <summary>
+    /// 풀에 남은 오브젝트가 없을 경우 새로 생성
+    /// </summary>
+    private GameObject InstantiateFallback(string key)
+    {
+        var foundPool = pools.Find(p => p.key == key);
+        if (foundPool != null)
+        {
+            Debug.LogWarning($"[PoolingManager] '{key}' 풀 부족 → 새 인스턴스 생성");
+            return Instantiate(foundPool.prefab);
+        }
+
+        Debug.LogError($"[PoolingManager] '{key}' 풀 데이터를 찾지 못했습니다.");
+        return null;
+    }
+
+    /// <summary>
+    /// 사용한 오브젝트를 다시 풀로 반환
+    /// </summary>
     public void ReturnToPool(string key, GameObject obj)
     {
         if (!poolDictionary.ContainsKey(key))
         {
-            Debug.LogWarning($"Pool with key {key} doesn't exist. Destroying object.");
+            Debug.LogWarning($"[PoolingManager] '{key}' 풀 없음 → 오브젝트 제거");
             Destroy(obj);
             return;
         }
 
-        // 비활성화 및 큐에 재삽입
         obj.SetActive(false);
         obj.transform.SetParent(this.transform);
         poolDictionary[key].Enqueue(obj);
     }
-
-    //=================== 아이템 Pooling ===================
 }

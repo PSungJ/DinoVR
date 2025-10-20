@@ -43,14 +43,14 @@ public class DinoBase : MonoBehaviour
     protected readonly string _aniAttack1 = "Attack1";
     protected readonly string _aniCall = "Call";
 
-    void Start()
+    void OnEnable()
     {
         TryGetComponent<DinoSound>(out sound);
         TryGetComponent<DinoStatus>(out status);
         agent = GetComponent<NavMeshAgent>();
         TryGetComponent<Animator>(out animator);
         agent.updateRotation = false;
-        agent.updatePosition = false;
+        //agent.updatePosition = false;
         agent.isStopped = true;
     }
 
