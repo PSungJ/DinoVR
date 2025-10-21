@@ -17,7 +17,7 @@ public class DinoAttack : MonoBehaviour
         rb.isKinematic = true;
         status = GetComponentInParent<DinoStatus>();
         dino = GetComponentInParent<DinoBase>();
-        damage = status.attackDamage;
+        damage = status.stats.attackDamage;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -26,7 +26,7 @@ public class DinoAttack : MonoBehaviour
         if (enemy != null)  // 상대가 공룡이라면
         {
             var enemyStat = enemy.GetComponent<DinoStatus>();
-            if (enemyStat.threat == status.threat)      // 상태가 공룡인데 같은 종이면 리턴
+            if (enemyStat.stats.threat == status.stats.threat)      // 상태가 공룡인데 같은 종이면 리턴
                 return;
 
             if (!hitList.Contains(enemy))
