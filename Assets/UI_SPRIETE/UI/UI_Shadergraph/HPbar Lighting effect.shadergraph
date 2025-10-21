@@ -2577,8 +2577,8 @@
     "m_ObjectId": "44aa933a5c3d45cfa09acd8a82f24983",
     "m_Title": "Jitter",
     "m_Position": {
-        "x": -2501.0,
-        "y": -793.0
+        "x": -2501.000244140625,
+        "y": -793.0001220703125
     }
 }
 
@@ -6367,8 +6367,8 @@
     "m_ObjectId": "c751ea97f20d4341a3b7bd144e22da34",
     "m_Title": "MoveHpBar",
     "m_Position": {
-        "x": -1935.0,
-        "y": -83.0
+        "x": -1935.0001220703125,
+        "y": -83.00000762939453
     }
 }
 
@@ -6584,8 +6584,8 @@
     "m_ObjectId": "d0efa91d4573494d825bacabc71a0799",
     "m_Title": "Edge Mask",
     "m_Position": {
-        "x": -1055.0,
-        "y": 966.0
+        "x": -1055.0001220703125,
+        "y": 965.9999389648438
     }
 }
 
@@ -6681,8 +6681,8 @@
     "m_ObjectId": "d63cded1f3a944039572b5140d7fc3a3",
     "m_Title": "HP Color Change (Color Swithching)",
     "m_Position": {
-        "x": -1772.0,
-        "y": 476.0
+        "x": -1772.0001220703125,
+        "y": 475.9999694824219
     }
 }
 
@@ -7588,7 +7588,7 @@
     "m_Title": "FIll Mask (Final FillMask)",
     "m_Position": {
         "x": -1856.0,
-        "y": 1011.0
+        "y": 1010.9999389648438
     }
 }
 
