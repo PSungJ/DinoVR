@@ -32,14 +32,19 @@ public class DinoTrex : DinoBase
                 ResetTarget();
                 return;
             }
-            float dis = (status.target.position - transform.position).magnitude;
-            if (dis > status.detactRange / 2f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            RotateSmoothly(status.target.position - transform.position);
+            currentAttackTime += Time.deltaTime;
+            if (currentAttackTime >= toAttackTime)
             {
-                RotateSmoothly(status.target.position - transform.position);
-                currentAttackTime += Time.deltaTime;
-                if (currentAttackTime >= toAttackTime)
+                currentAttackTime = 0f;
+                float dis = (status.target.position - transform.position).magnitude;
+                if (status.meat != null && dis > status.detactRange / 2f)    // 먹을게 있는데 멀리서 다가온다면
                 {
-                    currentAttackTime = 0f;
+                    if(Time.time - lastRoarTime >= 10f)
+                        ChangeState(DinoState.ROAR);
+                }
+                else
+                {
                     DinoStatus targetStat = status.target.GetComponent<DinoStatus>();
                     if (targetStat != null)
                     {
@@ -54,6 +59,7 @@ public class DinoTrex : DinoBase
                     }
                 }
             }
+            
         }
         else if (status.fearOrigin != null && status.fearCurrent > 0)
         {
@@ -74,7 +80,7 @@ public class DinoTrex : DinoBase
                 }
                 //Debug.Log($"{status.fearCurrent}, {status.fearThreshold * 0.05f}, {Time.time - lastRoarTime}");
             }
-            else if (dis > status.attackRange)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
+            else if (dis > status.attackRange * 2f)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
             {
                 if (status.IsAfraid())
                     StartFleeing();
@@ -91,6 +97,10 @@ public class DinoTrex : DinoBase
                         ChangeState(DinoState.CHASING);
                     }
                 }
+            }
+            else
+            {
+                ChangeState(DinoState.CHASING);
             }
         }
         else if (status.fearCurrent <= 0)
@@ -146,8 +156,14 @@ public class DinoTrex : DinoBase
         }
         else if (Vector3.Distance(status.target.position, transform.position) > status.awareness)   // 너무 멀어지면 포기
         {
-            ChangeState(DinoState.IDLE);
-            return;
+            chaseTime += ((status.hungerCurrent) / status.hungerMax) * Time.deltaTime;
+            chaseTime += status.meat != null ? 2f : 0f;
+            if (chaseTime > 20f)
+            {
+                chaseTime = 0f;
+                ResetTarget();
+                return;
+            }
         }
         agent.speed = status.walkSpeed / 2;
         agent.destination = status.target.position;

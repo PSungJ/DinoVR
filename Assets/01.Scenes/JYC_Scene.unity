@@ -723,7 +723,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   x: 140
   y: 140
-  amount: 30
+  amount: 100
   dinos:
   - {fileID: 7340962359164992218, guid: 106c52888b3d1c24fbbb5e3eaa80779c, type: 3}
   - {fileID: 826553837414163134, guid: 0ca4c456ebaccfc4da636a0151fa8b5b, type: 3}
@@ -847,7 +847,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 30, y: 1, z: 30}
+  m_LocalScale: {x: 80, y: 1, z: 80}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -988,11 +988,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: T-Rex
       objectReference: {fileID: 0}
-    - target: {fileID: 7751258051502445727, guid: 6022e7a761f97b94d8e891043b1f10cb,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1129,11 +1124,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2127482833726199009, guid: a5e07c1ba387a944eba162dac0fc0ec7,
-        type: 3}
-      propertyPath: fearThreshold
-      value: 100
-      objectReference: {fileID: 0}
     - target: {fileID: 8737209002489796876, guid: a5e07c1ba387a944eba162dac0fc0ec7,
         type: 3}
       propertyPath: m_Name
@@ -1243,7 +1233,7 @@ PrefabInstance:
     - target: {fileID: 2054885375928775812, guid: 3b5fe62e9bdbec34f848d6f7bfb23cca,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 12.23
       objectReference: {fileID: 0}
     - target: {fileID: 2054885375928775812, guid: 3b5fe62e9bdbec34f848d6f7bfb23cca,
         type: 3}
