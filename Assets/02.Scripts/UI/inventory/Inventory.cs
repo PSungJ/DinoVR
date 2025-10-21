@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System.Linq;
-using System; // InventorySlot 사용을 위해 추가
+using System;
 
 // InventorySlot, ItemBaseSO 등 외부 정의는 생략합니다.
 
@@ -84,7 +84,6 @@ public class Inventory : MonoBehaviour
         if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(index))
         {
             // QuickSlotManager.IsQuickSlotEmpty를 호출하여 실제 퀵슬롯 데이터 확인
-            // quickSlotManager가 IsQuickSlotEmpty를 구현하고 capacity를 사용한다고 가정
             return quickSlotManager.IsQuickSlotEmpty(index);
         }
 
@@ -101,10 +100,12 @@ public class Inventory : MonoBehaviour
         {
             if (inventorySlotUIs == null || i >= inventorySlotUIs.Length || inventorySlotUIs[i] == null)
             {
-                Debug.LogError($"UI 연결 오류: Inventory Slot UIs 배열의 Element {i}가 연결되지 않았습니다. Inspector를 확인하세요.");
+                // UI 연결 오류는 LogError 대신 LogWarning으로 대체하여 런타임 중단을 방지
+                Debug.LogWarning($"UI 연결 오류: Inventory Slot UIs 배열의 Element {i}가 연결되지 않았습니다. Inspector를 확인하세요.");
                 continue;
             }
 
+            // struct의 itemData와 stackSize 필드에 직접 접근
             inventorySlotUIs[i].UpdateSlotUI(slots[i].itemData, slots[i].stackSize);
         }
     }
@@ -127,6 +128,7 @@ public class Inventory : MonoBehaviour
             {
                 if (slots[i].itemData == itemToAdd && slots[i].stackSize < itemToAdd.maxStackSize)
                 {
+                    // struct의 복사본을 수정하는 대신, 직접 배열 요소에 접근하여 변경 (struct가 public 필드이므로 가능)
                     slots[i].stackSize += amount;
                     slots[i].stackSize = Mathf.Min(slots[i].stackSize, itemToAdd.maxStackSize);
 
@@ -157,8 +159,11 @@ public class Inventory : MonoBehaviour
 
     public void RemoveItem(int slotIndex, int amount)
     {
+        // 퀵슬롯 인덱스를 여기서 처리하지 않고, 순수 인벤토리 인덱스만 처리합니다.
+        // 퀵슬롯 아이템 제거는 QuickSlotManager가 담당해야 합니다.
         if (slotIndex >= 0 && slotIndex < capacity && !slots[slotIndex].IsEmpty)
         {
+            // struct의 복사본을 수정하는 대신, 직접 배열 요소에 접근하여 변경 (struct가 public 필드이므로 가능)
             slots[slotIndex].stackSize -= amount;
             if (slots[slotIndex].stackSize <= 0)
             {
@@ -188,9 +193,11 @@ public class Inventory : MonoBehaviour
     public bool UseItem(int slotIndex)
     {
         // ⭐ [퀵슬롯 위임 로직] 인덱스가 퀵슬롯 범위에 속하는지 확인하고 위임합니다.
+        // QuickSlotManager는 HandleQuickSlotUse 내부에서 Inventory.UseItem을 다시 호출하면 안 됩니다.
         if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(slotIndex))
         {
             Debug.Log($"[Inventory] UseItem Delegated to QuickSlotManager for index: {slotIndex}");
+            // 이 호출은 HandleQuickSlotUse가 UseItem을 재귀적으로 호출하지 않도록 QuickSlotManager가 수정되어야 합니다.
             return quickSlotManager.HandleQuickSlotUse(slotIndex);
         }
 
@@ -205,6 +212,7 @@ public class Inventory : MonoBehaviour
 
         if (item is EquippableItemSO equipItem)
         {
+            // EquippableItemSO와 EquipmentItemSO의 상속 관계를 가정하고 처리
             return TryEquipItem(slotIndex, equipItem);
         }
         else if (item.itemType == ItemType.Consumable)
@@ -279,14 +287,17 @@ public class Inventory : MonoBehaviour
 
     private bool TryEquipItem(int slotIndex, EquippableItemSO equipItem)
     {
+        // 1. 인벤토리 슬롯 비우기
         slots[slotIndex] = InventorySlot.Empty;
 
-        // 🔥 수정된 부분: Equip 함수에 slotIndex 인수를 추가하여 호출합니다.
+        // 2. 장비 장착 요청 (EquipmentManager는 ItemBaseSO의 파생 클래스인 EquipmentItemSO를 기대함)
+        // 🚨 [FIX] EquipmentManager.Equip의 올바른 시그니처를 사용합니다.
         EquippableItemSO oldItem = equipmentManager.Equip(equipItem, slotIndex);
 
         if (oldItem != null)
         {
-            // 이전 장비 아이템을 다시 인벤토리의 해당 슬롯에 되돌려 놓습니다.
+            // 3. 이전 장비 아이템을 다시 인벤토리의 해당 슬롯에 되돌려 놓습니다.
+            // EquipmentItemSO를 ItemBaseSO로 변환하여 InventorySlot에 저장합니다.
             slots[slotIndex] = new InventorySlot(oldItem, 1);
         }
 
@@ -296,11 +307,30 @@ public class Inventory : MonoBehaviour
 
     private bool ConsumeItem(int slotIndex)
     {
+        // 퀵슬롯의 소비 아이템은 QuickSlotManager에서 처리해야 합니다.
+        if (slotIndex < 0 || slotIndex >= capacity || slots[slotIndex].IsEmpty) return false;
+
         ConsumableItemSO consumable = slots[slotIndex].itemData as ConsumableItemSO;
         if (consumable == null) return false;
 
         Debug.Log($"[Inventory] Consuming {consumable.itemName} from slot {slotIndex}");
 
+        // 🚨 [FIX: 아이템 효과 적용 로직 추가]
+        PlayerHealthComponent playerHealth = PlayerHealthComponent.Instance;
+        EquipmentManager equipmentManager = EquipmentManager.Instance;
+
+        if (playerHealth == null || equipmentManager == null)
+        {
+            Debug.LogError("[Inventory] PlayerHealthComponent 또는 EquipmentManager 인스턴스를 찾을 수 없습니다. 아이템 효과가 적용되지 않았습니다.");
+        }
+        else
+        {
+            // ConsumableItemSO.Use 함수를 호출하여 효과 적용
+            // ItemBaseSO.Use(slotIndex, playerHealth, equipmentManager) 메서드가 ConsumableItemSO에 정의되어 있어야 함
+            consumable.Use(slotIndex, playerHealth, equipmentManager);
+        }
+
+        // 4. 스택 감소 및 UI 갱신 (RemoveItem이 처리)
         RemoveItem(slotIndex, 1);
         return true;
     }
