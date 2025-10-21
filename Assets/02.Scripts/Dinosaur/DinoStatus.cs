@@ -11,9 +11,10 @@ public class DinoStatus : MonoBehaviour
     public float walkSpeed = 2;         // 걷는 속도
     public float runSpeed = 4;         // 뛰는 속도
     public float rotationSpeed = 1f;    // 회전 속도
+    [Tooltip("밀림 우선순위 (PositionPriority) 낮을 수록 높은 개체에게 밀리지 않음")]
+    public int pp = 10;               // 밀림 우선순위    DinoBase의 NavMeshAgent 의 Obstacle Avoidance Priority 값 결정
     [Tooltip("도망 거리")]
     public float fleeDistance = 30f;    // 도망 거리
-
     public float attackDamage = 50;      // 공격력
     public float attackRange = 4;       // 공격 시작 사거리
     [Tooltip("스폰 지점에서 부터 몇 미터 까지 돌아다닐 지 (서식 영역)")]
@@ -34,38 +35,39 @@ public class DinoStatus : MonoBehaviour
     public float awareness = 10;         // 시야밖 감지 예민성
     public float detactRange = 20;      // 감지 거리
 
+    [Tooltip("육식여부")]
+    public bool isFoodMeat = false; // 육식 여부
+
     DinoBase dino;
 
     float lastHealTime;
     float lastFearTime;
 
-    [Tooltip("육식여부")]
-    public bool isFoodMeat = false; // 육식 여부
-
     [Header("확인용")]
     public float hpCurrent;
-    public float moveSpeedCurrent;
     public float fearCurrent;
     public float hungerCurrent;
-    public float thirstCurrent;
     public bool isDie = false;
-    public List<Transform> targetList;   // 사냥감 후보 리스트
-    public List<Transform> meatList;   // 사냥감 후보 리스트
+    public List<Transform> targetList = new();   // 사냥감 후보 리스트
+    public List<Transform> meatList = new();   // 사냥감 후보 리스트
     public Transform target;            // 가장 가까운 사냥감
     public Transform meat;              // 가장 가까운 고기
     public Transform fearOrigin;        // 공포 원인
 
     private void Start()
     {
-        hpCurrent = hpMax;
-        moveSpeedCurrent = walkSpeed;
-        fearCurrent = 0;
-        hungerCurrent = hungerMax;
-
-        lastFearTime = Time.time;
-
+        StatusInit();
         dino = GetComponent<DinoBase>();
         StartCoroutine(FearUpdate());
+    }
+
+    public void StatusInit()
+    {
+        isDie = false;
+        hpCurrent = hpMax;
+        fearCurrent = 0;
+        hungerCurrent = hungerMax;
+        lastFearTime = Time.time;
     }
 
     private void OnDrawGizmos()
@@ -97,18 +99,13 @@ public class DinoStatus : MonoBehaviour
             foreach (Collider col in dinos)
             {
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
-                if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
+                DinoStatus stat = col.GetComponent<DinoStatus>();
+                if (stat != null)
                 {
                     if (stat.threat <= threat || stat.isDie)
                     {
-                        if(isFoodMeat && stat.threat < threat)
-                        {
-                            if(stat.isDie == true)
-                                meatList.Add(col.transform);
-                            else
-                                targetList.Add(col.transform);
-                        }
-
+                        if(isFoodMeat && stat.isDie == false && stat.threat < threat)
+                            targetList.Add(col.transform);
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
                     AddFear(stat.threat, col.transform);
@@ -125,9 +122,25 @@ public class DinoStatus : MonoBehaviour
             }
             if (isFoodMeat) // 육식공룡 이라면
             {
-                target = FindNearest(targetList, transform);    // 가장 가까운 적 타겟 지정
+                //target = (target == null) ? FindNearest(targetList, transform) : target;    // 가장 가까운 적 타겟 지정
+                if (target != null)
+                    targetList.Add(target);
+                target = FindNearest(targetList, transform);
                 targetList.Clear();
 
+                Collider[] meats = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * detactRange, awareness * 2, LayerMask.GetMask("Dinosaur"));
+                foreach (Collider col in meats)
+                {
+                    if (col.gameObject == gameObject) continue; // 자기 자신 제외
+                    DinoStatus stat = col.GetComponent<DinoStatus>();
+                    if (stat != null)
+                    {
+                        if (stat.isDie)
+                        {
+                            meatList.Add(col.transform);
+                        }
+                    }
+                }
                 meat = FindNearest(meatList, transform);        // 가장 가까운 고기 지정
                 meatList.Clear();
             }

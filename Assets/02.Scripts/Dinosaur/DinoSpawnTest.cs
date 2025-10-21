@@ -24,8 +24,8 @@ public class DinoSpawnTest : MonoBehaviour
             var num = Random.Range(0, dinos.Length);
             if (num == 5)
             {
-                GameObject.Instantiate(dinos[num], pos + Vector3.right * 3f, Quaternion.identity);
-                GameObject.Instantiate(dinos[num], pos - Vector3.right * 3f, Quaternion.identity);
+                //GameObject.Instantiate(dinos[num], pos + Vector3.right * 3f, Quaternion.identity);
+                //GameObject.Instantiate(dinos[num], pos - Vector3.right * 3f, Quaternion.identity);
             }
             GameObject.Instantiate(dinos[num], pos, Quaternion.identity);
             yield return new WaitForSeconds(0.1f);
