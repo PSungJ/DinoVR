@@ -17,7 +17,7 @@ public class SpawnManager : MonoBehaviour
         new ItemSpawnLimit { key = "MedKit", maxCount = 3 },
         new ItemSpawnLimit { key = "Medicine", maxCount = 5 },
         new ItemSpawnLimit { key = "Lantern", maxCount = 2 },
-        new ItemSpawnLimit { key = "Ammo", maxCount = 10 }
+        new ItemSpawnLimit { key = "Ammo", maxCount = 15 }
     };
 
     [Header("°Ç¹° SpawnPoint")]
