@@ -56,11 +56,7 @@ public class DinoBase : MonoBehaviour
         agent.updateRotation = false;
         //agent.updatePosition = false;
         agent.isStopped = true;
-    }
-
-    private void OnEnable()
-    {
-        agent.avoidancePriority = status.pp;
+        agent.avoidancePriority = status.stats.pp;
         status.StatusInit();
     }
 
@@ -71,7 +67,16 @@ public class DinoBase : MonoBehaviour
 
         if (currentState == DinoState.DEATH)    // 죽었으면 다 무시
             return;
+        ThreatCheck();
 
+        if (agent.hasPath)
+        {
+            MoveWithSteering();
+        }
+    }
+
+    private void ThreatCheck()
+    {
         // 공포 원인이 나타났다면
         if (status.fearOrigin != null)
         {
@@ -83,16 +88,11 @@ public class DinoBase : MonoBehaviour
         } // 공포 원인이 없고 육식공룡의 타겟후보가 있다면
         else if (status.target != null && isSearching == false)
         {
-            if(status.meat == null ||  (status.meat != null && Vector3.Distance(status.target.position, transform.position) < status.detactRange * 0.75f))
+            if (status.meat == null || (status.meat != null && Vector3.Distance(status.target.position, transform.position) < status.stats.detactRange * 0.75f))
             {
                 isSearching = true;
                 ChangeState(DinoState.SEARCHING);
             }
-        }
-
-        if (agent.hasPath)
-        {
-            MoveWithSteering();
         }
     }
 
@@ -101,11 +101,11 @@ public class DinoBase : MonoBehaviour
         switch (currentState)
         {
             case DinoState.IDLE:
-                agent.avoidancePriority = status.pp;
+                agent.avoidancePriority = status.stats.pp;
                 Idle();
                 break;
             case DinoState.ROAMING:
-                agent.avoidancePriority = status.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
+                agent.avoidancePriority = status.stats.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
                 Roam();
                 break;
             case DinoState.EATING:
@@ -115,11 +115,11 @@ public class DinoBase : MonoBehaviour
                 Sleeping();
                 break;
             case DinoState.FLEEING:
-                agent.avoidancePriority = status.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
+                agent.avoidancePriority = status.stats.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
                 Fleeing();
                 break;
             case DinoState.ATTACKING:
-                agent.avoidancePriority = status.pp + 2;    // 공격시에는 다른 유닛을 밀어낼 수 없음
+                agent.avoidancePriority = status.stats.pp + 2;    // 공격시에는 다른 유닛을 밀어낼 수 없음
                 Attack();
                 break;
             case DinoState.SEARCHING:
@@ -135,7 +135,7 @@ public class DinoBase : MonoBehaviour
                 Sneak();
                 break;
             case DinoState.CHASING:
-                agent.avoidancePriority = status.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
+                agent.avoidancePriority = status.stats.pp + 1;    // 이동시에는 멈춘 유닛을 밀어낼 수 없음
                 Chasing();
                 break;
             case DinoState.DEATH:
@@ -164,9 +164,9 @@ public class DinoBase : MonoBehaviour
         else if (currentIdleTime >= toRoamTime)     // 일정시간 대기 후
         {
             currentIdleTime = 0f;
-            if (status.meat != null && status.hungerCurrent <= status.hungerMax / 2f)   // 배고픈데 고기 있으면 고기로 이동
+            if (status.meat != null && status.hungerCurrent <= status.stats.hungerMax / 2f)   // 배고픈데 고기 있으면 고기로 이동
             {
-                if (Vector3.Distance(transform.position, status.meat.position) <= status.attackRange / 1.5f)  // 고기가 근처면 그냥 먹음
+                if (Vector3.Distance(transform.position, status.meat.position) <= status.stats.attackRange / 1.5f)  // 고기가 근처면 그냥 먹음
                 {
                     ChangeState(DinoState.EATING);
                     isAnimating = true;
@@ -174,11 +174,11 @@ public class DinoBase : MonoBehaviour
                 else
                 {
                     Vector3 dir = (status.meat.position - transform.position).normalized;
-                    agent.SetDestination(status.meat.position - dir * (status.attackRange / 2f));
+                    agent.SetDestination(status.meat.position - dir * (status.stats.attackRange / 2f));
                     ChangeState(DinoState.ROAMING);
                 }
             }
-            else if (!status.isFoodMeat && status.hungerCurrent <= status.hungerMax / 2f)
+            else if (!status.stats.isFoodMeat && status.hungerCurrent <= status.stats.hungerMax / 2f)
             {
                 ChangeState(DinoState.EATING);
                 isAnimating = true;
@@ -193,7 +193,7 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Roam()  // 떠도는 중
     {
-        agent.speed = status.walkSpeed;
+        agent.speed = status.stats.walkSpeed;
 
         if (!agent.hasPath)     // 도착하면 기본상태로 전환
         {
@@ -210,16 +210,16 @@ public class DinoBase : MonoBehaviour
             if (status.meat != null) {
                 RotateSmoothly(status.meat.position - transform.position);
                 DinoStatus meat = status.meat.GetComponent<DinoStatus>();
-                meat.hpCurrent -= status.hungerMax / 4f;
+                meat.hpCurrent -= status.stats.hungerMax / 4f;
                 if(meat.hpCurrent <= 0f)
                 {
                     meat.gameObject.SetActive(false);
                 }
             }
-            if (!status.isFoodMeat)
-                status.hungerCurrent += status.hungerMax / 8f;
+            if (!status.stats.isFoodMeat)
+                status.hungerCurrent += status.stats.hungerMax / 8f;
             else
-                status.hungerCurrent += status.hungerMax / 2f;
+                status.hungerCurrent += status.stats.hungerMax / 2f;
 
             ChangeState(DinoState.IDLE);
         }
@@ -232,7 +232,7 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Fleeing()   // 도망
     {
-        agent.speed = status.runSpeed;
+        agent.speed = status.stats.runSpeed;
 
         if (!agent.hasPath)     // 도망 지점에 도착하면 경계 상태로 전환
         {
@@ -243,7 +243,7 @@ public class DinoBase : MonoBehaviour
         else if (status.fearOrigin != null && !status.IsAfraid())                         // 도망중에 적이 사거리에 오면
         {
             float dis = Vector3.Distance(status.fearOrigin.position, transform.position);
-            if (dis <= status.attackRange)
+            if (dis <= status.stats.attackRange)
             {
                 agent.ResetPath();
                 ChangeState(DinoState.ATTACKING);
@@ -256,7 +256,7 @@ public class DinoBase : MonoBehaviour
         agent.destination = transform.position;
         agent.ResetPath();
 
-        if (status.isFoodMeat == false) // 초식이면
+        if (status.stats.isFoodMeat == false) // 초식이면
         {
             if (status.fearCurrent <= 0)    // 공포 수치가 0이 되면 경계 풀기
             {
@@ -266,19 +266,19 @@ public class DinoBase : MonoBehaviour
             else if (status.fearOrigin != null)
             {
                 float dis = (status.fearOrigin.position - transform.position).magnitude;
-                if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+                if (dis > status.stats.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
                 {
                     RotateSmoothly(status.fearOrigin.position - transform.position, true);
                     if (status.IsAfraid())
                         StartFleeing();
-                    else if (status.fearCurrent >= status.fearThreshold*0.1f)
+                    else if (status.fearCurrent >= status.stats.fearThreshold*0.1f)
                         StartFleeing();
                 }
-                else if (dis > status.attackRange && Time.time - lastRoarTime >= 15f)  // 거리가 가깝지만 공격사거리 밖이라면
+                else if (dis > status.stats.attackRange && Time.time - lastRoarTime >= 15f)  // 거리가 가깝지만 공격사거리 밖이라면
                 {
                     ChangeState(DinoState.ROAR);
                 }
-                else if (dis <= status.attackRange) // 공격사거리 안이라면
+                else if (dis <= status.stats.attackRange) // 공격사거리 안이라면
                 {
                     if (!status.IsAfraid())
                         ChangeState(DinoState.ATTACKING);
@@ -312,9 +312,9 @@ public class DinoBase : MonoBehaviour
         }
 
         agent.destination = status.target.position;
-        agent.speed = status.runSpeed;
+        agent.speed = status.stats.runSpeed;
 
-        if (Vector3.Distance(status.target.position, transform.position) <= status.attackRange)
+        if (Vector3.Distance(status.target.position, transform.position) <= status.stats.attackRange)
         {
             agent.destination = transform.position;
             ChangeState(DinoState.ATTACKING);
@@ -322,7 +322,7 @@ public class DinoBase : MonoBehaviour
         }
         else
         {
-            chaseTime += 5f * ((status.hungerCurrent) / status.hungerMax) * Time.deltaTime;
+            chaseTime += 5f * ((status.hungerCurrent) / status.stats.hungerMax) * Time.deltaTime;
             chaseTime += status.meat != null ? 2f : 0f;
             if (chaseTime > 20f)
             {
@@ -343,7 +343,7 @@ public class DinoBase : MonoBehaviour
             if (status.IsAfraid())                      // 공포상태라면 도망
                 StartFleeing();
             // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
-            else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
+            else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
             {
                 ChangeState(DinoState.ATTACKING);
             }
@@ -356,7 +356,7 @@ public class DinoBase : MonoBehaviour
     {
         if (status.target == null)
         {
-            if (status.isFoodMeat)
+            if (status.stats.isFoodMeat)
             {
                 ResetTarget();
                 return;
@@ -374,13 +374,13 @@ public class DinoBase : MonoBehaviour
 
         if (!isAnimating)
         {
-            if (status.isFoodMeat == false) // 초식
+            if (status.stats.isFoodMeat == false) // 초식
             {
                 if (status.fearOrigin != null)
                 {
                     if (status.IsAfraid())
                         StartFleeing();
-                    else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.attackRange)
+                    else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
                         ChangeState(DinoState.ATTACKING);
                     else
                         ChangeState(DinoState.SEARCHING);
@@ -397,7 +397,7 @@ public class DinoBase : MonoBehaviour
                     StartFleeing();
                 else if (status.target != null)                       // 그런거 없고 공격중인 타겟이 있다면
                 {
-                    if (Vector3.Distance(transform.position, status.target.position) <= status.attackRange)
+                    if (Vector3.Distance(transform.position, status.target.position) <= status.stats.attackRange)
                         ChangeState(DinoState.ATTACKING);
                     else
                         ChangeState(DinoState.CHASING);
@@ -412,7 +412,7 @@ public class DinoBase : MonoBehaviour
         {
             isAnimating = true;
             status.isDie = true;
-            status.hpCurrent = status.hpMax;
+            status.hpCurrent = status.stats.hpMax;
             agent.ResetPath();
             agent.avoidancePriority = 1;    // 죽은 시체는 밀리지 않게
             animator.SetTrigger(_aniHurt);
@@ -432,19 +432,19 @@ public class DinoBase : MonoBehaviour
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
                 if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
                 {
-                    if (stat != null && stat.threat == status.threat && stat.fearCurrent == 0)
+                    if (stat != null && stat.stats.threat == status.stats.threat && stat.fearCurrent == 0)
                     {
                         stat.AddFear(10, status.fearOrigin);
                     }
                 }
             }
 
-            agent.SetDestination(transform.position + fleeDir * status.fleeDistance);
+            agent.SetDestination(transform.position + fleeDir * status.stats.fleeDistance);
             ChangeState(DinoState.FLEEING);
         }
         else                                    // 도망가다 다른 적을 만났을 때 서로의 위치의 중간값으로 도망가도록
         {
-            agent.SetDestination(agent.destination + fleeDir * status.fleeDistance);
+            agent.SetDestination(agent.destination + fleeDir * status.stats.fleeDistance);
             ChangeState(DinoState.FLEEING);
         }
     }
@@ -457,12 +457,12 @@ public class DinoBase : MonoBehaviour
             animator.SetTrigger(_aniHurt);
         }
 
-        if(!status.isFoodMeat)  // 초식이면 공포 원인으로 부터 공포 받음
-            status.AddFear(status.hpMax - status.hpCurrent,status.fearOrigin);
+        if(!status.stats.isFoodMeat)  // 초식이면 공포 원인으로 부터 공포 받음
+            status.AddFear(status.stats.hpMax - status.hpCurrent,status.fearOrigin);
         else if (status.fearOrigin != null) // 육식인데 공포 원인이 있으면 공포 원인으로 부터 공포 받음
-            status.AddFear(status.hpMax - status.hpCurrent, status.fearOrigin);
+            status.AddFear(status.stats.hpMax - status.hpCurrent, status.fearOrigin);
         else                                // 육식인데 공포 원인이 없으면 타겟한테 공포 받음
-            status.AddFear(status.hpMax - status.hpCurrent, status.target);
+            status.AddFear(status.stats.hpMax - status.hpCurrent, status.target);
 
         if (status.hpCurrent <= 0)
         {
@@ -537,9 +537,9 @@ public class DinoBase : MonoBehaviour
     protected void RotateSmoothly(Vector3 dir, bool slowTurn = false)   // 방향회전
     {
         if (dir.sqrMagnitude < 0.01f) return;
-        float rotSpeed = slowTurn ? status.rotationSpeed * 0.5f : status.rotationSpeed;
+        float rotSpeed = slowTurn ? status.stats.rotationSpeed * 0.5f : status.stats.rotationSpeed;
         Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.rotationSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.stats.rotationSpeed * Time.deltaTime);
     }
 
     void MoveWithSteering()
@@ -561,7 +561,7 @@ public class DinoBase : MonoBehaviour
 
         // 회전
         Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.rotationSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.stats.rotationSpeed * Time.deltaTime);
 
         // 현재 정면과 목표 방향의 각도 차이
         float angle = Vector3.Angle(transform.forward, moveDir);
