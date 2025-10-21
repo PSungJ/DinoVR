@@ -13,7 +13,7 @@ public class DinoRaptor : DinoBase
         if (agent.hasPath)
             agent.ResetPath();
 
-        if(status.hungerCurrent > status.hungerMax / 2f)
+        if(status.hungerCurrent > status.stats.hungerMax / 2f)
         {
             if (status.target != null)
             {
@@ -34,7 +34,7 @@ public class DinoRaptor : DinoBase
             {
                 currentAttackTime = 0f;
                 float dis = (status.target.position - transform.position).magnitude;
-                if(status.meat != null && dis > status.detactRange / 2) // 먹을게 있는데 멀리서 다가온다면
+                if(status.meat != null && dis > status.stats.detactRange / 2) // 먹을게 있는데 멀리서 다가온다면
                 {
                     if (Time.time - lastRoarTime >= 5f)
                         ChangeState(DinoState.ROAR);
@@ -49,15 +49,15 @@ public class DinoRaptor : DinoBase
         else if (status.fearOrigin != null && status.fearCurrent > 0)
         {
             float dis = (status.fearOrigin.position - transform.position).magnitude;
-            if (dis > status.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
+            if (dis > status.stats.detactRange * 0.9f)  // 멀리서 접근하는 걸 발견했다면 바라보기
             {
                 RotateSmoothly(status.fearOrigin.position - transform.position);
                 if (status.IsAfraid())
                     StartFleeing();
-                else if (status.fearCurrent >= status.fearThreshold * 0.2f && Time.time - lastRoarTime >= 5f)
+                else if (status.fearCurrent >= status.stats.fearThreshold * 0.2f && Time.time - lastRoarTime >= 5f)
                     ChangeState(DinoState.ROAR);
             }
-            else if (dis > status.attackRange * 2f && Time.time - lastRoarTime >= 5f)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
+            else if (dis > status.stats.attackRange * 2f && Time.time - lastRoarTime >= 5f)  // 거리가 가깝지만 공격사거리 밖이라면 포효로 경고하기
             {
                 ChangeState(DinoState.ROAR);
             }
@@ -76,7 +76,7 @@ public class DinoRaptor : DinoBase
 
     public override void Chasing()
     {
-        agent.speed = status.runSpeed;
+        agent.speed = status.stats.runSpeed;
 
         if (status.IsAfraid())
         {
@@ -91,7 +91,7 @@ public class DinoRaptor : DinoBase
         }
         if (Time.time - lastAttackTime > 5f)        // 마지막 공격으로 부터 5초가 넘었다면 추격 후 공격
         {
-            if (Vector3.Distance(status.target.position, transform.position) <= status.attackRange)
+            if (Vector3.Distance(status.target.position, transform.position) <= status.stats.attackRange)
             {
                 agent.SetDestination(transform.position);
                 ChangeState(DinoState.ATTACKING);
@@ -160,7 +160,7 @@ public class DinoRaptor : DinoBase
             if (col.gameObject == gameObject) continue; // 자기 자신 제외
             if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
             {
-                if (stat.threat == status.threat)
+                if (stat.stats.threat == status.stats.threat)
                 {
                     col.TryGetComponent<DinoBase>(out DinoBase raptor);
                     if (raptor.currentState != DinoState.CALL && raptor.currentState != DinoState.CHASING && raptor.currentState != DinoState.ATTACKING)
