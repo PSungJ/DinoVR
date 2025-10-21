@@ -1,53 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using Unity.VisualScripting;
 using UnityEngine;
 
 public class DinoStatus : MonoBehaviour
 {
-    [Header("스테이터스")]
-    public float hpMax = 100;           // 체력
-    public float hungerMax = 100;       // 최대 배고픔
-    public float thirstMax = 100;       // 최대 갈증
-    public float walkSpeed = 2;         // 걷는 속도
-    public float runSpeed = 4;         // 뛰는 속도
-    public float rotationSpeed = 1f;    // 회전 속도
-    [Tooltip("도망 거리")]
-    public float fleeDistance = 30f;    // 도망 거리
-
-    public float attackDamage = 50;      // 공격력
-    public float attackRange = 4;       // 공격 시작 사거리
-    [Tooltip("스폰 지점에서 부터 몇 미터 까지 돌아다닐 지 (서식 영역)")]
-    public float territoryRange = 50;    // 서식지 범위 ( 스폰 위치를 기준으로 최대 몇 미터까지 돌아다닐 지 )
-    [Tooltip("발자국 생성 주기")]
-    public float footStepInterval = 180;  // 발자국 생성 주기 (초)
-
-    [Header("스테이터스 2")]
-    [Tooltip("최대 공포수치")]
-    public float fearThreshold = 100;   // 최대 공포
-    [Tooltip("공포 감소 주기")]
-    public float fearReduceInterval = 1f; // 공포 감소 주기
-    [Tooltip("공포 지속시간")]
-    public float fearDuration = 5f;     // 공포 지속시간
-    [Tooltip("위협 생성 수치")]
-    public float threat = 0;            // 위협 생성
-    [Tooltip("시야밖 감지 예민성")]
-    public float awareness = 10;         // 시야밖 감지 예민성
-    public float detactRange = 20;      // 감지 거리
-
-    DinoBase dino;
+    [Header("참조")]
+    [Tooltip("공룡 기본 스테이터스 파일 (Scriptable Object)")]
+    public DinoScriptable stats;
 
     float lastFearTime;
 
-    [Tooltip("육식여부")]
-    public bool isFoodMeat = false; // 육식 여부
+    DinoBase dino;
 
     [Header("확인용")]
     public float hpCurrent;
-    public float moveSpeedCurrent;
     public float fearCurrent;
     public float hungerCurrent;
-    public float thirstCurrent;
     public bool isDie = false;
     public List<Transform> targetList = new();   // 사냥감 후보 리스트
     public List<Transform> meatList = new();   // 사냥감 후보 리스트
@@ -55,65 +25,106 @@ public class DinoStatus : MonoBehaviour
     public Transform meat;              // 가장 가까운 고기
     public Transform fearOrigin;        // 공포 원인
 
+    private const float statusUpdateInterval = 1.0f;    // 배고픔 , 체력회복 갱신 주기
+    private const float targetingInterval = 0.5f;       // 타겟 감지 갱신 주기
+
     private void Start()
     {
-        hpCurrent = hpMax;
-        moveSpeedCurrent = walkSpeed;
-        fearCurrent = 0;
-        hungerCurrent = hungerMax;
-        thirstCurrent = thirstMax;
-
-        lastFearTime = Time.time;
-
         dino = GetComponent<DinoBase>();
-        StartCoroutine(FearUpdate());
+        StatusInit();
+        StartCoroutine(StatusUpdate());
+        StartCoroutine(Targeting());
+    }
+
+    IEnumerator StatusUpdate()
+    {
+        while (!isDie)
+        {
+            yield return new WaitForSeconds(statusUpdateInterval);
+            if (hungerCurrent > 0)
+                hungerCurrent = Mathf.Clamp(hungerCurrent - 1f, 0, stats.hungerMax);
+            // 배고프지 않을때 체력 회복
+            if (hpCurrent < stats.hpMax && hungerCurrent > 0f)
+            {
+                hpCurrent = Mathf.Clamp(hpCurrent + 1f, 0, stats.hpMax);
+            }
+            if (fearCurrent > 0 && Time.time - lastFearTime >= stats.fearReduceInterval)
+            {
+                fearCurrent = Mathf.Clamp(fearCurrent - stats.fearThreshold * 0.01f, 0, stats.fearThreshold);
+                if (fearCurrent == 0)
+                    fearOrigin = null;
+            }
+        }
+    }
+
+    public void StatusInit()
+    {
+        isDie = false;
+        hpCurrent = stats.hpMax;
+        fearCurrent = 0;
+        hungerCurrent = stats.hungerMax;
+        lastFearTime = Time.time;
     }
 
     private void OnDrawGizmos()
     {
+                            // 스탯 할당 전에는 Gizmo 그리지 않음
+        if (stats == null) return;
         Gizmos.color = Color.white.WithAlpha(0.1f);
-        Gizmos.DrawWireSphere(transform.position, awareness);
-        Gizmos.DrawWireSphere(transform.position+ transform.forward * detactRange, awareness);
+        Gizmos.DrawWireSphere(transform.position, stats.awareness);
+        Gizmos.DrawWireSphere(transform.position+ transform.forward * stats.detactRange, stats.awareness);
     }
 
-    IEnumerator FearUpdate()        // 공포 감지
+    IEnumerator Targeting()        // 타겟 감지 및 주변 공포 획득
     {
         while (!isDie)   // 죽지 않았다면
         {
-            yield return new WaitForSeconds(0.1f);
-            if (hungerCurrent > 0)
-                hungerCurrent -= 0.1f;
-            if (fearCurrent > 0 && Time.time - lastFearTime >= fearReduceInterval)
-            {
-                fearCurrent -= 1f;
-            }
+            yield return new WaitForSeconds(targetingInterval);
 
-            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * detactRange, awareness, LayerMask.GetMask("Dinosaur"));
+            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness, LayerMask.GetMask("Dinosaur"));
             foreach (Collider col in dinos)
             {
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
-                DinoStatus stat = col.GetComponent<DinoStatus>();
-                if (stat != null)
+                DinoStatus dino = col.GetComponent<DinoStatus>();
+                if (dino != null)
                 {
-                    if (stat.threat <= threat || stat.isDie)
+                    // 자신보다 위협수치가 이하이거나 죽었다면
+                    if (dino.stats.threat <= stats.threat || isDie)
                     {
-                        if(isFoodMeat && stat.threat < threat)
-                        {
-                            if(stat.isDie)
-                                meatList.Add(col.transform);
-                            else
-                                targetList.Add(col.transform);
-                        }
+                        // 자신이 육식일때 상대가 살아있고 나보다 위협수치가 낮다면 타겟 리스트에 추가
+                        if(stats.isFoodMeat && dino.isDie == false && dino.stats.threat < stats.threat)
+                            targetList.Add(col.transform);
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
-                    AddFear(stat.threat, col.transform);
+                    AddFear(stats.threat, col.transform);
                 }
+
+                
+                // 플레이어 인식해서 타겟에 추가하기
+
+                // Player player = col.GetCompoent<Player>();
+                // if (player != null)
+                // targetList.Add(col.transform);
+
             }
-            if (isFoodMeat) // 육식공룡 이라면
+            if (stats.isFoodMeat) // 육식공룡 이라면
             {
-                target = FindNearest(targetList, transform);    // 가장 가까운 적 타겟 지정
+                if (target != null)     // 기존 타겟도 후보에 포함
+                    targetList.Add(target);
+                target = FindNearest(targetList, transform);    // 가장 가까운 타겟 확정
                 targetList.Clear();
 
+                // 고기 감지
+                Collider[] meats = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness * 2, LayerMask.GetMask("Dinosaur"));
+                foreach (Collider col in meats)
+                {
+                    if (col.gameObject == gameObject) continue; // 자기 자신 제외
+                    DinoStatus stat = col.GetComponent<DinoStatus>();
+                    if (stat != null && stat.isDie)
+                    {
+                        meatList.Add(col.transform);
+                    }
+                }
                 meat = FindNearest(meatList, transform);        // 가장 가까운 고기 지정
                 meatList.Clear();
             }
@@ -132,31 +143,28 @@ public class DinoStatus : MonoBehaviour
         float angleFactor = (angle <= 120f) ? 1f : 0.5f;    
 
         // 체력 보정   // 체력이 낮으면 더 민감하게 반응
-        float healthFactor = 1f;
-        float hpPercent = hpCurrent / hpMax;
-        healthFactor =  1f / hpPercent;
+        float hpPercent = Mathf.Max(0.1f, hpCurrent / stats.hpMax);
+        float healthFactor =  1f / hpPercent;
 
-        float finalFear = amount * disFactor * healthFactor;
+        float finalFear = amount * disFactor * healthFactor * angleFactor;
 
         fearCurrent += finalFear;
-        if (fearCurrent > fearThreshold)
+        if (fearCurrent > stats.fearThreshold)
         {
-            fearCurrent = fearThreshold;
+            fearCurrent = stats.fearThreshold;
         }
         fearOrigin = fearOriginTr;
         lastFearTime = Time.time;
-        IsAfraid();
 
         //Debug.Log($"현재 공포:{fearCurrent} 공포 {finalFear} 증가 = 거리 보정:{disFactor} | 시야보정:{disFactor} | 체력 보정:{healthFactor}");
     }
 
     public bool IsAfraid()  // (공포 수치가 임계점을 넘었는지) 확인
     {
-        bool terrified = fearCurrent >= fearThreshold;
-        return terrified;
+        return fearCurrent >= stats.fearThreshold;
     }
 
-    public Transform FindNearest(List<Transform> targets, Transform self)
+    private Transform FindNearest(List<Transform> targets, Transform self)
     {
         Transform nearest = null;
         float nearestDistSqr = Mathf.Infinity;
@@ -172,8 +180,6 @@ public class DinoStatus : MonoBehaviour
                 nearestDistSqr = distSqr;
             }
         }
-        if (nearest == null && target != null)
-            nearest = target;        
         return nearest;
     }
 }
