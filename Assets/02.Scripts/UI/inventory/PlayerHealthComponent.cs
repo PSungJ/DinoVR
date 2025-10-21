@@ -16,8 +16,9 @@ public class PlayerHealthComponent : MonoBehaviour
 
     // -----------------------------------------------------------------
     [Header("Effects")]
-    [Tooltip("체력 회복 시 재생할 파티클 시스템 프리팹")]
-    [SerializeField] private GameObject healParticlePrefab; // ⭐ 추가된 파티클 필드
+    [Tooltip("플레이어 자식 오브젝트에 이미 부착된 체력 회복 파티클 시스템")]
+    // ⭐ 프리팹이 아닌, 씬에 존재하는 ParticleSystem 컴포넌트 자체를 할당해야 합니다.
+    [SerializeField] private ParticleSystem healParticlePrefab;
     // -----------------------------------------------------------------
 
     private void Awake()
@@ -40,7 +41,7 @@ public class PlayerHealthComponent : MonoBehaviour
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
         Debug.Log($"[PlayerHealth] 체력 회복 (+{amount}). 현재 체력: {currentHealth}");
 
-        // ⭐ 파티클 시스템 실행 로직 추가
+        // ⭐ 파티클 시스템 실행 로직 호출
         PlayHealEffect();
     }
 
@@ -57,37 +58,19 @@ public class PlayerHealthComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// 힐링 파티클 프리팹을 인스턴스화하고 재생합니다.
+    /// 할당된 파티클 시스템을 재생합니다. (인스턴스화 대신)
     /// </summary>
     private void PlayHealEffect()
     {
         if (healParticlePrefab != null)
         {
-            // 1. 플레이어 위치에 파티클 프리팹을 생성합니다.
-            GameObject effectInstance = Instantiate(
-                healParticlePrefab,
-                transform.position,
-                Quaternion.identity,
-                transform // 플레이어 오브젝트의 자식으로 설정하여 함께 움직이도록 할 수 있습니다. (옵션)
-            );
-
-            // 2. 파티클 시스템 컴포넌트를 가져옵니다.
-            ParticleSystem ps = effectInstance.GetComponent<ParticleSystem>();
-
-            if (ps != null)
-            {
-                // 파티클이 끝나면 자동으로 제거되도록 설정 (옵션)
-                Destroy(effectInstance, ps.main.duration + ps.main.startLifetimeMultiplier);
-            }
-            else
-            {
-                // 파티클 컴포넌트가 없다면, 5초 후 수동으로 제거
-                Destroy(effectInstance, 5f);
-            }
+            // 씬에 이미 존재하는 파티클 시스템 컴포넌트를 바로 재생합니다.
+            // (이미 플레이어의 자식으로 위치가 고정되어 있다고 가정합니다.)
+            healParticlePrefab.Play();
         }
         else
         {
-            Debug.LogWarning("[PlayerHealth] healParticlePrefab이 할당되지 않았습니다. Inspector를 확인하세요.");
+            Debug.LogWarning("[PlayerHealth] healParticlePrefab이 할당되지 않았습니다. Inspector를 확인하세요. 씬의 Player 오브젝트 자식에 있는 ParticleSystem을 할당해야 합니다.");
         }
     }
 }
