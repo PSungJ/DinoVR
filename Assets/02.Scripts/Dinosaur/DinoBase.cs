@@ -6,6 +6,9 @@ using UnityEngine.AI;
                       // 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
 public enum DinoState { IDLE, ROAMING, EATING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK};
 
+[RequireComponent(typeof(NavMeshAgent))]
+[RequireComponent(typeof(DinoStatus))]
+[RequireComponent(typeof(Animator))]
 public class DinoBase : MonoBehaviour
 {
     [Header("컴포넌트 및 시스템 속성")]
@@ -47,14 +50,17 @@ public class DinoBase : MonoBehaviour
     protected readonly string _aniAttack1 = "Attack1";
     protected readonly string _aniCall = "Call";
 
-    void OnEnable()
+    private void Awake()
     {
         TryGetComponent<DinoSound>(out sound);
-        TryGetComponent<DinoStatus>(out status);
         agent = GetComponent<NavMeshAgent>();
-        TryGetComponent<Animator>(out animator);
+        animator = GetComponent<Animator>();
+    }
+
+
+    public void DinoInit()  // 공룡 배치시 실행 해야함
+    {
         agent.updateRotation = false;
-        //agent.updatePosition = false;
         agent.isStopped = true;
         agent.avoidancePriority = status.stats.pp;
         status.StatusInit();
