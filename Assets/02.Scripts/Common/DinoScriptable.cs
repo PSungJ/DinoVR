@@ -7,7 +7,7 @@ using UnityEngine;
 public class DinoScriptable : ScriptableObject
 {
     // 공룡 식별용 enum — Inspector에서 드롭다운으로 선택 가능
-    public enum DinoName { Phacy, Stego, Brachio, Croco, Raptor, Tyranno }
+    public enum DinoName { Brachio, Iguanodon, Pachy, Stega, Tricera, Raptor, Tyranno }
     public DinoName dino;
 
     [Header("스테이터스")]
