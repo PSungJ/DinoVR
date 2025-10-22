@@ -7,6 +7,7 @@ public class DinoSound : MonoBehaviour
     public AudioSource audioSource;
     public float volume = 1f;
     [Header("오디오 클립")]
+    public AudioClip[] stepClips;  // 발소리
     public AudioClip[] growlClips;  // 으르렁
     public AudioClip[] barkClips;   // 짖기
     public AudioClip[] roarClips;   // 포효

@@ -17,7 +17,9 @@ public class DinoTrex : DinoBase
         if(agent.hasPath)
             agent.ResetPath();
 
-        if (status.hungerCurrent > status.stats.hungerMax / 2f)
+        searchingTime += Time.deltaTime;
+
+        if (status.hungerCurrent > status.stats.hungerMax / 2f || searchingTime >= 10f)
         {
             if (status.target != null)
             {

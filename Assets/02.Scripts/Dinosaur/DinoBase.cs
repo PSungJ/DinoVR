@@ -1,9 +1,10 @@
 using System.Collections;
-
+using System.IO;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
-                      // 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
+// 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
 public enum DinoState { IDLE, ROAMING, EATING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK};
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -13,7 +14,6 @@ public class DinoBase : MonoBehaviour
 {
     [Header("컴포넌트 및 시스템 속성")]
     public Animator animator;
-    public DinoSound sound;
     public DinoStatus status;
     public NavMeshAgent agent;
 
@@ -32,6 +32,7 @@ public class DinoBase : MonoBehaviour
     protected float callTime = 4f;
 
     protected bool isSearching = false;
+    public float searchingTime = 0f;
 
     public bool isAnimating = false;
     public string currentStateName;
@@ -52,18 +53,22 @@ public class DinoBase : MonoBehaviour
 
     private void Awake()
     {
-        TryGetComponent<DinoSound>(out sound);
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        status = GetComponent<DinoStatus>();
     }
 
+    private void OnEnable()
+    {
+        DinoInit();
+    }
 
     public void DinoInit()  // 공룡 배치시 실행 해야함
     {
+        status.StatusInit();
         agent.updateRotation = false;
         agent.isStopped = true;
         agent.avoidancePriority = status.stats.pp;
-        status.StatusInit();
     }
 
     protected virtual void Update()
@@ -162,7 +167,9 @@ public class DinoBase : MonoBehaviour
     public virtual void Idle()  // 기본 상태
     {
         isSearching = false;
-        
+        searchingTime = 0f;
+
+
         if (currentIdleTime < toRoamTime)           // toRoamTime 만큼 대기 후 떠돌기 위한 체크
         {
             currentIdleTime += Time.deltaTime;
@@ -349,7 +356,7 @@ public class DinoBase : MonoBehaviour
             if (status.IsAfraid())                      // 공포상태라면 도망
                 StartFleeing();
             // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
-            else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
+            else if (status.fearOrigin != null && Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
             {
                 ChangeState(DinoState.ATTACKING);
             }
@@ -546,6 +553,29 @@ public class DinoBase : MonoBehaviour
         float rotSpeed = slowTurn ? status.stats.rotationSpeed * 0.5f : status.stats.rotationSpeed;
         Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.stats.rotationSpeed * Time.deltaTime);
+    }
+
+    protected bool RayCheck(Transform target)
+    {
+        float maxDistance = status.stats.detactRange + status.stats.awareness /2f;
+        RaycastHit hit;
+        Vector3 pos = transform.position + Vector3.up * 2f;
+        if (Physics.Raycast(pos, target.transform.position - pos, out hit, maxDistance, 1 << LayerMask.GetMask("Building") | 1 << LayerMask.GetMask("Object")))
+        {
+            if (hit.transform == target)    // 닿은게 공룡이라면
+            {
+                Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.red);
+                return true;
+            }
+            else if (Vector3.Distance(target.transform.position, pos) < status.stats.awareness / 2f) // 장애물이 있더라도 감지범위의 50% 이내라면
+            {
+                Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.yellow);
+                return true;
+            }
+            else
+                Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.blue);
+        }
+        return false;
     }
 
     void MoveWithSteering()
