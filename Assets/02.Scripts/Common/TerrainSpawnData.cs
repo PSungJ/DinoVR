@@ -13,7 +13,8 @@ public class TerrainSpawnData : ScriptableObject
     [System.Serializable]
     public class DinoSpawnInfo
     {
-        public DinoScriptable dinoData; // ScriptableObject 참조: 공룡의 데이터 + Prefab
+        public string key;              // PoolingManager에서 사용할 키 (예: "Raptor", "T-Rex")
+        public GameObject dinoPrefab;       // 직접 공룡 프리팹 참조
         public int count;               // 스폰 시도 횟수 (또는 최대 개수)
         [Range(0f, 1f)] public float probability = 1f; // 각 시도별 스폰 확률 (0~1)
     }
