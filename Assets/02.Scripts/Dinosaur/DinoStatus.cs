@@ -81,22 +81,45 @@ public class DinoStatus : MonoBehaviour
         {
             yield return new WaitForSeconds(targetingInterval);
 
-            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness, LayerMask.GetMask("Dinosaur"));
+            RaycastHit hit;
+            Vector3 pos = transform.position + Vector3.up * 2f;
+            float maxDistance = 100f;
+            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness);
+            
             foreach (Collider col in dinos)
             {
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
+                //if (col.gameObject.layer != LayerMask.GetMask("Dinosaur")) // 공룡이나 사람 아니면 스킵
+                    //continue;
+                
                 DinoStatus dino = col.GetComponent<DinoStatus>();
                 if (dino != null)
                 {
                     // 자신보다 위협수치가 이하이거나 죽었다면
                     if (dino.stats.threat <= stats.threat || isDie)
                     {
-                        // 자신이 육식일때 상대가 살아있고 나보다 위협수치가 낮다면 타겟 리스트에 추가
-                        if(stats.isFoodMeat && dino.isDie == false && dino.stats.threat < stats.threat)
-                            targetList.Add(col.transform);
+                        // 자신이 육식일때 상대가 살아있고 나보다 위협수치가 낮다면
+                        if (stats.isFoodMeat && dino.isDie == false && dino.stats.threat < stats.threat)
+                        {
+                            Debug.DrawRay(pos, (col.transform.position - pos) * maxDistance, Color.blue);
+                            // 상대와 나 사이에 장애물이 없을 경우
+                            if (Physics.Raycast(pos, col.transform.position - pos, out hit, maxDistance, 1<< LayerMask.GetMask("Building") | 1<< LayerMask.GetMask("Object")))
+                            {
+                                if (hit.transform == null)    // 닿은게 공룡이라면
+                                {
+                                    targetList.Add(col.transform);  // 타겟 리스트에 추가
+                                    Debug.DrawRay(pos, (col.transform.position - pos) * maxDistance, Color.red);
+                                }
+                                else if (Vector3.Distance(col.transform.position, pos) <= stats.awareness / 2f) // 장애물이 있더라도 감지범위의 50% 이내라면
+                                {
+                                    targetList.Add(col.transform);  // 타겟 리스트에 추가
+                                    Debug.DrawRay(pos, (col.transform.position - pos) * maxDistance, Color.yellow);
+                                }
+                            }
+                        }
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
-                    AddFear(stats.threat, col.transform);
+                    AddFear(dino.stats.threat, col.transform);
                 }
 
                 
