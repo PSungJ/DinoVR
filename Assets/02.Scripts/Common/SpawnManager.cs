@@ -137,21 +137,27 @@ public class SpawnManager : MonoBehaviour
             {
                 if (Random.value <= info.probability)
                 {
-                    Vector3 pos;
-                    if (TryGetNavMeshPosition(out pos))
+                    if (TryGetNavMeshPosition(out Vector3 pos))
                     {
-                        string key = info.dinoData.dino.ToString();
+                        // 풀에서 스폰 시도
                         GameObject dino = PoolingManager.Instance.SpawnFromPool(
-                            key, pos, Quaternion.identity, dinosParent
+                            info.key, pos, Quaternion.identity, dinosParent
                         );
+
+                        // 풀에 없으면 직접 Instantiate
+                        if (dino == null && info.dinoPrefab != null)
+                        {
+                            dino = Instantiate(info.dinoPrefab, pos, Quaternion.identity, dinosParent);
+                            Debug.LogWarning($"[SpawnManager] '{info.key}' 풀 없음 → 직접 생성됨");
+                        }
 
                         if (dino == null)
                         {
-                            Debug.LogWarning($"Failed to spawn dino with key {key}");
+                            Debug.LogWarning($"Failed to spawn dino with key {info.key}");
                             continue;
                         }
 
-                        // NavMeshAgent가 있는 경우 Warp로 위치 보정
+                        // NavMeshAgent 위치 보정
                         NavMeshAgent agent = dino.GetComponent<NavMeshAgent>();
                         if (agent != null)
                         {
@@ -160,7 +166,7 @@ public class SpawnManager : MonoBehaviour
                                 if (!NavMesh.SamplePosition(pos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
                                 {
                                     Debug.LogWarning($"Dino '{dino.name}' spawn failed: no NavMesh near {pos}");
-                                    PoolingManager.Instance.ReturnToPool(key, dino);
+                                    PoolingManager.Instance.ReturnToPool(info.key, dino);
                                     continue;
                                 }
                                 agent.Warp(hit.position);
@@ -233,10 +239,16 @@ public class SpawnManager : MonoBehaviour
     /// </summary>
     private Vector3 GetRandomPositionOnTerrain()
     {
-        Terrain t = Terrain.activeTerrain;
+        if (currentTerrainParent == null)
+        {
+            Debug.LogWarning("No current terrain parent set. Returning Vector3.zero.");
+            return Vector3.zero;
+        }
+
+        Terrain t = currentTerrainParent.GetComponent<Terrain>();
         if (t == null)
         {
-            Debug.LogWarning("No active Terrain found. Returning Vector3.zero.");
+            Debug.LogWarning($"No Terrain component found on '{currentTerrainParent.name}'. Returning Vector3.zero.");
             return Vector3.zero;
         }
 
