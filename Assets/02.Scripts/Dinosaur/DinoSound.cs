@@ -8,9 +8,9 @@ public class DinoSound : MonoBehaviour
     public float volume = 1f;
     [Header("¿Àµð¿À Å¬¸³")]
     public AudioClip[] growlClips;  // À¸¸£··
-    public AudioClip[] yelpClips;   // ÇÇ°Ý
     public AudioClip[] barkClips;   // Â¢±â
     public AudioClip[] roarClips;   // Æ÷È¿
+    public AudioClip[] yelpClips;   // ÇÇ°Ý
     public AudioClip[] deathClips;  // Á×À½
 
     void Start()
@@ -18,27 +18,16 @@ public class DinoSound : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-    public void Growl()
+    public void Growl() // À¸¸£··
     {
         int Index = Random.Range(0, growlClips.Length);
 
-        //AudioClip clip = growlClips[Index];
-        //audioSource.PlayOneShot(clip);
-    }
-
-    //Yelp Sounds (Random)
-
-    public void Yelp()
-    {
-        int Index = Random.Range(0, yelpClips.Length);
-
-        AudioClip clip = yelpClips[Index];
+        AudioClip clip = growlClips[Index];
         audioSource.PlayOneShot(clip);
     }
 
-    //Bark Sounds (Random)
 
-    public void Bark()
+    public void Bark()  // Â¢±â
     {
         int Index = Random.Range(0, barkClips.Length);
 
@@ -46,20 +35,25 @@ public class DinoSound : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
-    //Roar Sounds (Random)
 
-    public void Roar()
+    public void Roar()  // Æ÷È¿
     {
         int Index = Random.Range(0, roarClips.Length);
 
-        //AudioClip clip = roarClips[Index];
-        //audioSource.PlayOneShot(clip);
+        AudioClip clip = roarClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void Yelp()  // ÇÇ°Ý
+    {
+        int Index = Random.Range(0, yelpClips.Length);
+
+        AudioClip clip = yelpClips[Index];
+        audioSource.PlayOneShot(clip);
     }
 
 
-    //Death Sounds (Random)
-
-    public void Death()
+    public void Death() // Á×À½
     {
         int Index = Random.Range(0, deathClips.Length);
 
