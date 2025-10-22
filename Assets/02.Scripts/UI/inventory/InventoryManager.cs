@@ -1,30 +1,30 @@
-using UnityEngine;
-using System.Collections.Generic; // ¸®½ºÆ®¸¦ »ç¿ëÇÑ´Ù¸é ÇÊ¿ä
+ï»¿using UnityEngine;
+using System.Collections.Generic; // ë¦¬ìŠ¤íŠ¸ë¥¼ ì‚¬ìš©í•œë‹¤ë©´ í•„ìš”
 
-// ÀÎº¥Åä¸® ½½·Ô¿¡ ÀúÀåµÇ´Â µ¥ÀÌÅÍÀÇ ±¸Á¶ (±¸Á¶Ã¼ ¶Ç´Â ½ºÅ©¸³ÅÍºí ¿ÀºêÁ§Æ® ÇüÅÂ¸¦ °¡Á¤)
+// ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯ì— ì €ì¥ë˜ëŠ” ë°ì´í„°ì˜ êµ¬ì¡° (êµ¬ì¡°ì²´ ë˜ëŠ” ìŠ¤í¬ë¦½í„°ë¸” ì˜¤ë¸Œì íŠ¸ í˜•íƒœë¥¼ ê°€ì •)
 [System.Serializable]
 public struct InventorySlotData
 {
     public string itemName;
     public int itemID;
     public int count;
-    // ¿©±â¿¡ ¾ÆÀÌÅÛ ¾ÆÀÌÄÜ(Sprite), 3D ¸ğµ¨ ÇÁ¸®ÆÕ µîÀÇ Á¤º¸°¡ Ãß°¡µÉ ¼ö ÀÖ½À´Ï´Ù.
+    // ì—¬ê¸°ì— ì•„ì´í…œ ì•„ì´ì½˜(Sprite), 3D ëª¨ë¸ í”„ë¦¬íŒ¹ ë“±ì˜ ì •ë³´ê°€ ì¶”ê°€ë  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 }
 
 
 public class InventoryManager : MonoBehaviour
 {
-    // InventoryManager¸¦ ½Ì±ÛÅæ ÆĞÅÏÀ¸·Î °ü¸®ÇÏ´Â °æ¿ì°¡ ¸¹½À´Ï´Ù.
+    // InventoryManagerë¥¼ ì‹±ê¸€í†¤ íŒ¨í„´ìœ¼ë¡œ ê´€ë¦¬í•˜ëŠ” ê²½ìš°ê°€ ë§ìŠµë‹ˆë‹¤.
     // public static InventoryManager Instance { get; private set; } 
 
     [Header("Inventory Settings")]
-    [SerializeField] private int inventorySize = 20; // ÀÎº¥Åä¸® Å©±â
+    [SerializeField] private int inventorySize = 20; // ì¸ë²¤í† ë¦¬ í¬ê¸°
 
-    // ÀÎº¥Åä¸®ÀÇ ½ÇÁ¦ µ¥ÀÌÅÍ (¹è¿­ ¶Ç´Â ¸®½ºÆ®)
-    [Tooltip("½ÇÁ¦ ÀÎº¥Åä¸® µ¥ÀÌÅÍ¸¦ ÀúÀåÇÏ´Â ¹è¿­")]
+    // ì¸ë²¤í† ë¦¬ì˜ ì‹¤ì œ ë°ì´í„° (ë°°ì—´ ë˜ëŠ” ë¦¬ìŠ¤íŠ¸)
+    [Tooltip("ì‹¤ì œ ì¸ë²¤í† ë¦¬ ë°ì´í„°ë¥¼ ì €ì¥í•˜ëŠ” ë°°ì—´")]
     public InventorySlotData[] slots;
 
-    // ÀÎº¥Åä¸® UI¸¦ ¾÷µ¥ÀÌÆ®ÇÏ´Â ¸ğµç ½½·Ô ¿ÀºêÁ§Æ® ¸®½ºÆ® (UI °»½Å¿ë)
+    // ì¸ë²¤í† ë¦¬ UIë¥¼ ì—…ë°ì´íŠ¸í•˜ëŠ” ëª¨ë“  ìŠ¬ë¡¯ ì˜¤ë¸Œì íŠ¸ ë¦¬ìŠ¤íŠ¸ (UI ê°±ì‹ ìš©)
     // [SerializeField] private List<GameObject> slotUIs; 
 
 
@@ -32,7 +32,7 @@ public class InventoryManager : MonoBehaviour
     {
         // if (Instance == null) Instance = this; else Destroy(gameObject);
 
-        // ÀÎº¥Åä¸® ¹è¿­ ÃÊ±âÈ­
+        // ì¸ë²¤í† ë¦¬ ë°°ì—´ ì´ˆê¸°í™”
         if (slots == null || slots.Length == 0)
         {
             slots = new InventorySlotData[inventorySize];
@@ -44,64 +44,64 @@ public class InventoryManager : MonoBehaviour
     {
         for (int i = 0; i < inventorySize; i++)
         {
-            // ºó ½½·ÔÀ¸·Î ÃÊ±âÈ­ (¾ÆÀÌµğ 0, Ä«¿îÆ® 0 µî)
+            // ë¹ˆ ìŠ¬ë¡¯ìœ¼ë¡œ ì´ˆê¸°í™” (ì•„ì´ë”” 0, ì¹´ìš´íŠ¸ 0 ë“±)
             slots[i] = new InventorySlotData { itemName = "Empty", itemID = 0, count = 0 };
         }
     }
 
-    // --- ÇÙ½É ±â´É: VR Grab & Drop ÈÄ È£ÃâµÉ ¾ÆÀÌÅÛ ±³È¯ ·ÎÁ÷ ---
+    // --- í•µì‹¬ ê¸°ëŠ¥: VR Grab & Drop í›„ í˜¸ì¶œë  ì•„ì´í…œ êµí™˜ ë¡œì§ ---
     /// <summary>
-    /// µÎ ÀÎº¥Åä¸® ½½·ÔÀÇ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ¸¦ ¼­·Î ±³È¯ÇÕ´Ï´Ù.
-    /// VRSlotInteraction ½ºÅ©¸³Æ®¿¡¼­ µå·Ó ÀÌº¥Æ® ¹ß»ı ½Ã È£ÃâµË´Ï´Ù.
+    /// ë‘ ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯ì˜ ì•„ì´í…œ ë°ì´í„°ë¥¼ ì„œë¡œ êµí™˜í•©ë‹ˆë‹¤.
+    /// VRSlotInteraction ìŠ¤í¬ë¦½íŠ¸ì—ì„œ ë“œë¡­ ì´ë²¤íŠ¸ ë°œìƒ ì‹œ í˜¸ì¶œë©ë‹ˆë‹¤.
     /// </summary>
-    /// <param name="fromIndex">¾ÆÀÌÅÛÀ» Àâ¾Ò´ø ¿ø·¡ ½½·ÔÀÇ ÀÎµ¦½º</param>
-    /// <param name="toIndex">¾ÆÀÌÅÛÀÌ µå·ÓµÈ ´ë»ó ½½·ÔÀÇ ÀÎµ¦½º</param>
+    /// <param name="fromIndex">ì•„ì´í…œì„ ì¡ì•˜ë˜ ì›ë˜ ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤</param>
+    /// <param name="toIndex">ì•„ì´í…œì´ ë“œë¡­ëœ ëŒ€ìƒ ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤</param>
     public void SwapItems(int fromIndex, int toIndex)
     {
-        // 1. ÀÎµ¦½º À¯È¿¼º °Ë»ç
+        // 1. ì¸ë±ìŠ¤ ìœ íš¨ì„± ê²€ì‚¬
         if (fromIndex < 0 || fromIndex >= slots.Length ||
             toIndex < 0 || toIndex >= slots.Length)
         {
-            Debug.LogError($"[InventoryManager] Swap Error: À¯È¿ÇÏÁö ¾ÊÀº ÀÎµ¦½º ({fromIndex} ¶Ç´Â {toIndex})");
+            Debug.LogError($"[InventoryManager] Swap Error: ìœ íš¨í•˜ì§€ ì•Šì€ ì¸ë±ìŠ¤ ({fromIndex} ë˜ëŠ” {toIndex})");
             return;
         }
 
-        // 2. ¾ÆÀÌÅÛ µ¥ÀÌÅÍ ±³È¯ (Swap)
-        InventorySlotData tempItem = slots[fromIndex]; // ÀÓ½Ã º¯¼ö¿¡ fromIndex µ¥ÀÌÅÍ ÀúÀå
-        slots[fromIndex] = slots[toIndex]; // toIndex µ¥ÀÌÅÍ¸¦ fromIndex·Î ÀÌµ¿
-        slots[toIndex] = tempItem; // ÀÓ½Ã º¯¼ö¿¡ ÀúÀåÇß´ø µ¥ÀÌÅÍ¸¦ toIndex·Î ÀÌµ¿
+        // 2. ì•„ì´í…œ ë°ì´í„° êµí™˜ (Swap)
+        InventorySlotData tempItem = slots[fromIndex]; // ì„ì‹œ ë³€ìˆ˜ì— fromIndex ë°ì´í„° ì €ì¥
+        slots[fromIndex] = slots[toIndex]; // toIndex ë°ì´í„°ë¥¼ fromIndexë¡œ ì´ë™
+        slots[toIndex] = tempItem; // ì„ì‹œ ë³€ìˆ˜ì— ì €ì¥í–ˆë˜ ë°ì´í„°ë¥¼ toIndexë¡œ ì´ë™
 
-        Debug.Log($"[InventoryManager] ¾ÆÀÌÅÛ ±³È¯ ¼º°ø: Slot {fromIndex} <-> Slot {toIndex}");
+        Debug.Log($"[InventoryManager] ì•„ì´í…œ êµí™˜ ì„±ê³µ: Slot {fromIndex} <-> Slot {toIndex}");
 
-        // 3. UI ¾÷µ¥ÀÌÆ® (½ÇÁ¦ UI Image, Text µîÀ» °»½ÅÇÏ´Â ÇÔ¼ö È£Ãâ)
-        // ÀÌ ºÎºĞÀº »ç¿ëÀÚ´ÔÀÇ ±âÁ¸ UI ¾÷µ¥ÀÌÆ® ·ÎÁ÷¿¡ µû¶ó ´Ş¶óÁı´Ï´Ù.
-        // ¿¹¸¦ µé¾î: UpdateSlotUI(fromIndex); UpdateSlotUI(toIndex);
+        // 3. UI ì—…ë°ì´íŠ¸ (ì‹¤ì œ UI Image, Text ë“±ì„ ê°±ì‹ í•˜ëŠ” í•¨ìˆ˜ í˜¸ì¶œ)
+        // ì´ ë¶€ë¶„ì€ ì‚¬ìš©ìë‹˜ì˜ ê¸°ì¡´ UI ì—…ë°ì´íŠ¸ ë¡œì§ì— ë”°ë¼ ë‹¬ë¼ì§‘ë‹ˆë‹¤.
+        // ì˜ˆë¥¼ ë“¤ì–´: UpdateSlotUI(fromIndex); UpdateSlotUI(toIndex);
         UpdateAllSlotUIs();
     }
 
-    // ÀÌ ÇÔ¼ö´Â ½ÇÁ¦ UI ¿ÀºêÁ§Æ®ÀÇ Image³ª Text¸¦ °»½ÅÇÏ´Â ·ÎÁ÷À» Æ÷ÇÔÇØ¾ß ÇÕ´Ï´Ù.
+    // ì´ í•¨ìˆ˜ëŠ” ì‹¤ì œ UI ì˜¤ë¸Œì íŠ¸ì˜ Imageë‚˜ Textë¥¼ ê°±ì‹ í•˜ëŠ” ë¡œì§ì„ í¬í•¨í•´ì•¼ í•©ë‹ˆë‹¤.
     private void UpdateAllSlotUIs()
     {
-        // ¿¹½Ã: ¸ğµç ½½·Ô UI ¿ÀºêÁ§Æ®¸¦ ¼øÈ¸ÇÏ¸ç µ¥ÀÌÅÍ¸¦ ¹İ¿µ
+        // ì˜ˆì‹œ: ëª¨ë“  ìŠ¬ë¡¯ UI ì˜¤ë¸Œì íŠ¸ë¥¼ ìˆœíšŒí•˜ë©° ë°ì´í„°ë¥¼ ë°˜ì˜
         // for (int i = 0; i < slots.Length; i++)
         // {
         //     // slotUIs[i].GetComponent<SlotUIUpdater>().Update(slots[i]);
         // }
     }
 
-    // --- ±âÅ¸ ÀÎº¥Åä¸® ±â´Éµé (¿¹½Ã) ---
+    // --- ê¸°íƒ€ ì¸ë²¤í† ë¦¬ ê¸°ëŠ¥ë“¤ (ì˜ˆì‹œ) ---
 
-    // ¾ÆÀÌÅÛ Ãß°¡
+    // ì•„ì´í…œ ì¶”ê°€
     public bool AddItem(InventorySlotData item)
     {
-        // ¿©±â¿¡ ¾ÆÀÌÅÛ Ãß°¡ ·ÎÁ÷ ±¸Çö
+        // ì—¬ê¸°ì— ì•„ì´í…œ ì¶”ê°€ ë¡œì§ êµ¬í˜„
         return true;
     }
 
-    // ¾ÆÀÌÅÛ Á¦°Å
+    // ì•„ì´í…œ ì œê±°
     public void RemoveItem(int index)
     {
-        // ¿©±â¿¡ ¾ÆÀÌÅÛ Á¦°Å ·ÎÁ÷ ±¸Çö
+        // ì—¬ê¸°ì— ì•„ì´í…œ ì œê±° ë¡œì§ êµ¬í˜„
         // slots[index] = new InventorySlotData { itemName = "Empty", itemID = 0, count = 0 };
     }
 }
