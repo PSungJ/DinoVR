@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DinoSound : MonoBehaviour
@@ -8,6 +6,7 @@ public class DinoSound : MonoBehaviour
     public float volume = 1f;
     [Header("¿Àµð¿À Å¬¸³")]
     public AudioClip[] stepClips;  // ¹ß¼Ò¸®
+    public AudioClip[] breathClips;  // ¼û¼Ò¸®
     public AudioClip[] growlClips;  // À¸¸£··
     public AudioClip[] barkClips;   // Â¢±â
     public AudioClip[] roarClips;   // Æ÷È¿
@@ -19,7 +18,7 @@ public class DinoSound : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-    public void Growl() // À¸¸£··
+    public void PlayGrowl() // À¸¸£··
     {
         int Index = Random.Range(0, growlClips.Length);
 
@@ -27,8 +26,24 @@ public class DinoSound : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
+    public void PlayStep() // ¹ß¼Ò¸®
+    {
+        int Index = Random.Range(0, stepClips.Length);
 
-    public void Bark()  // Â¢±â
+        AudioClip clip = stepClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void PlayBreath() // °æ°è
+    {
+        int Index = Random.Range(0, breathClips.Length);
+
+        AudioClip clip = breathClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+
+    public void PlayBark()  // Â¢±â
     {
         int Index = Random.Range(0, barkClips.Length);
 
@@ -37,7 +52,7 @@ public class DinoSound : MonoBehaviour
     }
 
 
-    public void Roar()  // Æ÷È¿
+    public void PlayRoar()  // Æ÷È¿
     {
         int Index = Random.Range(0, roarClips.Length);
 
@@ -45,7 +60,7 @@ public class DinoSound : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
-    public void Yelp()  // ÇÇ°Ý
+    public void PlayYelp()  // ÇÇ°Ý
     {
         int Index = Random.Range(0, yelpClips.Length);
 
@@ -54,7 +69,7 @@ public class DinoSound : MonoBehaviour
     }
 
 
-    public void Death() // Á×À½
+    public void PlayDeath() // Á×À½
     {
         int Index = Random.Range(0, deathClips.Length);
 
