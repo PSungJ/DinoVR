@@ -1,31 +1,42 @@
+ï»¿using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine;
+using Game.Foundation;
 
 public class QuickSlotInteraction : MonoBehaviour
 {
-    [SerializeField] private ItemBaseSO itemInSlot; // Äü½½·Ô¿¡ ¿¬°áµÈ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ
+    [SerializeField] private ItemBaseSO itemInSlot; // í€µìŠ¬ë¡¯ì— ì—°ê²°ëœ ì•„ì´í…œ ë°ì´í„°
 
     private void Awake()
     {
-        // 1. XR Interactable ÄÄÆ÷³ÍÆ® °¡Á®¿À±â (Select ÀÌº¥Æ®¸¦ ¹ŞÀ» ÁØºñ)
         var interactable = GetComponent<XRBaseInteractable>();
         if (interactable != null)
         {
-            // 2. Select Entered ÀÌº¥Æ®¿¡ ¾ÆÀÌÅÛ »ç¿ë ·ÎÁ÷ ¿¬°á
             interactable.selectEntered.AddListener(OnQuickSlotSelected);
         }
     }
 
     private void OnQuickSlotSelected(SelectEnterEventArgs args)
     {
-        if (itemInSlot != null)
+        var inventory = ServiceLocator.Get<IInventoryService>();
+
+        if (itemInSlot != null && inventory != null)
         {
-            // Inventory ½Ì±ÛÅæÀ» ÅëÇØ ¾ÆÀÌÅÛ »ç¿ë ÇÔ¼ö È£Ãâ
-            Inventory.Instance.UseItemByData(itemInSlot);
+            // ğŸ” ì•„ì´í…œì„ ê°€ì§„ ìŠ¬ë¡¯ì„ ì°¾ëŠ”ë‹¤.
+            for (int i = 0; i < inventory.Capacity; i++)
+            {
+                var slot = inventory.GetSlot(i);
+                if (slot.itemData == itemInSlot && !slot.IsEmpty)
+                {
+                    inventory.UseItem(i);
+                    return;
+                }
+            }
+
+            Debug.Log($"[QuickSlotInteraction] {itemInSlot.itemName} ì•„ì´í…œì„ ì¸ë²¤í† ë¦¬ì—ì„œ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
         }
         else
         {
-            Debug.Log("Äü½½·ÔÀÌ ºñ¾îÀÖ½À´Ï´Ù.");
+            Debug.LogWarning("[QuickSlotInteraction] í€µìŠ¬ë¡¯ì´ ë¹„ì–´ìˆê±°ë‚˜ ì¸ë²¤í† ë¦¬ ì„œë¹„ìŠ¤ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
         }
     }
 }

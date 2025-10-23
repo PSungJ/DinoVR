@@ -1,138 +1,111 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using Game.Foundation;
+using Game.Gameplay;
+using Game.UI.Interface;
 
-// 장착 아이템이 들어갈 수 있는 슬롯의 종류를 정의합니다.
-// 이 열거형은 EquippableItemSO에서도 참조됩니다.
-public enum EquipSlotType
+namespace Game.Gameplay
 {
-    Weapon,
-    Helmet,
-    Armor,
-    Boots
-}
-
-/// <summary>
-/// 플레이어의 장비 아이템을 관리하고 관련 로직을 처리하는 클래스입니다.
-/// </summary>
-public class EquipmentManager : MonoBehaviour
-{
-    // Singleton pattern for easy access
-    public static EquipmentManager Instance { get; private set; }
-
-    [Header("Dependencies")] // 기존 Canvas 필드 유지
-    [SerializeField] private QuickSlotManager quickSlotManager;
-    [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs; // UI 갱신을 위해 UI 컴포넌트 참조
-
-    // 현재 장착된 아이템을 저장하는 딕셔너리 (사용자 요청 반영)
-    private Dictionary<EquipSlotType, EquippableItemSO> equippedItems = new Dictionary<EquipSlotType, EquippableItemSO>();
-
     /// <summary>
-    /// 현재 장착된 아이템 목록을 읽기 전용으로 반환합니다.
+    /// 플레이어 장비 시스템.  
+    /// 무기, 방어구 등의 장착/해제를 관리하며,  
+    /// 스탯 및 UI와의 연동을 담당합니다.
     /// </summary>
-    public IReadOnlyDictionary<EquipSlotType, EquippableItemSO> CurrentEquipment => equippedItems;
-
-    private void Awake()
+    public class EquipmentManager : MonoBehaviour, IEquipmentService
     {
-        if (Instance == null)
+        [Header("UI References")]
+        [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs;
+
+        private readonly Dictionary<EquipSlotType, EquippableItemSO> equippedItems = new();
+
+        private void Awake()
         {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
+            ServiceLocator.Register<IEquipmentService>(this);
+
+            foreach (EquipSlotType slot in System.Enum.GetValues(typeof(EquipSlotType)))
+                equippedItems[slot] = null;
         }
 
-        // 초기화: 모든 슬롯을 null로 설정
-        foreach (EquipSlotType slot in System.Enum.GetValues(typeof(EquipSlotType)))
+        private void OnDestroy()
         {
-            // 중복 추가를 피하기 위해 이미 존재하는지 확인합니다.
-            if (!equippedItems.ContainsKey(slot))
+            ServiceLocator.Unregister<IEquipmentService>(this);
+        }
+
+        // ----------------------------------------------------
+        // [Public API]
+        // ----------------------------------------------------
+
+        public IReadOnlyDictionary<EquipSlotType, EquippableItemSO> CurrentEquipment => equippedItems;
+
+        public EquippableItemSO Equip(EquippableItemSO newItem, int inventorySlotIndex)
+        {
+            if (newItem == null)
             {
-                equippedItems.Add(slot, null);
+                Debug.LogWarning("[EquipmentManager] null 아이템은 장착할 수 없습니다.");
+                return null;
             }
-        }
-    }
 
-    // ----------------------------------------------------
-    // [장비 로직]
-    // ----------------------------------------------------
+            var slotType = newItem.equipSlotType;
+            EquippableItemSO oldItem = null;
 
-    /// <summary>
-    /// 새로운 장비 아이템을 장착합니다.
-    /// 🔥 Inventory.cs의 로직을 위해 장착 해제된 이전 아이템을 반환합니다.
-    /// </summary>
-    /// <param name="itemToEquip">장착할 아이템 데이터</param>
-    /// <param name="inventorySlotIndex">아이템이 온 Inventory 슬롯의 인덱스 (-1은 Inventory 외부에서 온 경우)</param>
-    /// <returns>장착 해제된 기존 아이템. 없으면 null.</returns>
-    public EquippableItemSO Equip(EquippableItemSO itemToEquip, int inventorySlotIndex)
-    {
-        if (itemToEquip == null)
-        {
-            Debug.LogError("[EquipmentManager] Attempted to equip a null item.");
-            return null;
-        }
+            if (equippedItems.TryGetValue(slotType, out var current) && current != null)
+            {
+                oldItem = current;
+                equippedItems[slotType] = null;
+                Debug.Log($"[EquipmentManager] {slotType} 슬롯에서 {oldItem.itemName} 해제.");
+            }
 
-        EquipSlotType targetSlot = itemToEquip.equipSlotType;
-        EquippableItemSO oldItem = null;
+            equippedItems[slotType] = newItem;
+            Debug.Log($"[EquipmentManager] {newItem.itemName} 장착 완료 → {slotType}");
 
-        // 1. 이미 장착된 아이템이 있는지 확인
-        if (equippedItems.TryGetValue(targetSlot, out EquippableItemSO currentItem) && currentItem != null)
-        {
-            oldItem = currentItem;
-            // 2. 이미 아이템이 있다면, 현재 아이템을 해제
-            equippedItems[targetSlot] = null;
-            Debug.Log($"[EquipmentManager] Unequipping {oldItem.itemName} from {targetSlot} before new equip. (Old item will be returned to inventory.)");
+            // UI 갱신
+            UpdateEquipmentUI(slotType, newItem);
+
+            // 스탯 반영
+            var stats = ServiceLocator.Get<IPlayerStatsService>();
+            if (stats != null)
+            {
+                stats.ApplyEquipmentModifiers(newItem);
+            }
+
+            return oldItem;
         }
 
-        // 3. 새 아이템 장착
-        equippedItems[targetSlot] = itemToEquip;
-        Debug.Log($"[EquipmentManager] Successfully equipped {itemToEquip.itemName} into {targetSlot} slot.");
-
-        // 4. UI 갱신
-        UpdateEquipmentUI(targetSlot, itemToEquip);
-
-        // 5. QuickSlotManager 연동 (옵션)
-        // 여기에 QuickSlotManager 연동 로직이 들어갈 수 있습니다.
-
-        return oldItem; // 이전 아이템 반환 (Inventory.cs와의 호환성 유지)
-    }
-
-    /// <summary>
-    /// 특정 슬롯의 장비를 해제하는 로직입니다.
-    /// </summary>
-    /// <param name="slotType">해제할 장착 위치</param>
-    /// <returns>해제된 아이템. 없으면 null.</returns>
-    public EquippableItemSO Unequip(EquipSlotType slotType)
-    {
-        if (equippedItems.TryGetValue(slotType, out EquippableItemSO currentItem) && currentItem != null)
+        public EquippableItemSO Unequip(EquipSlotType slotType)
         {
+            if (!equippedItems.TryGetValue(slotType, out var current) || current == null)
+                return null;
+
             equippedItems[slotType] = null;
-            Debug.Log($"[EquipmentManager] Unequipped {currentItem.itemName} from {slotType}.");
+            Debug.Log($"[EquipmentManager] {slotType} 슬롯에서 {current.itemName} 해제 완료.");
 
-            // UI 갱신 (빈 슬롯 상태로 만듭니다)
+            // 스탯 반영
+            var stats = ServiceLocator.Get<IPlayerStatsService>();
+            stats?.RemoveEquipmentModifiers(current);
+
+            // UI 갱신
             UpdateEquipmentUI(slotType, null);
 
-            // QuickSlotManager 연동 (장비 해제 시 퀵슬롯에 알림)
-
-            return currentItem;
+            return current;
         }
-        return null;
-    }
 
-    // ----------------------------------------------------
-    // [UI 갱신]
-    // ----------------------------------------------------
-
-    private void UpdateEquipmentUI(EquipSlotType slotType, EquippableItemSO item)
-    {
-        // 해당 EquipSlotType을 가진 UI 컴포넌트를 찾아 갱신
-        foreach (var uiSlot in equipmentSlotUIs)
+        public void UpdateEquipmentUI(EquipSlotType slotType, EquippableItemSO item)
         {
-            if (uiSlot != null && uiSlot.SlotType == slotType)
+            foreach (var ui in equipmentSlotUIs)
             {
-                uiSlot.UpdateSlotUI(item);
-                break;
+                if (ui != null && ui.SlotType == slotType)
+                {
+                    ui.UpdateSlotUI(item);
+                    break;
+                }
+            }
+        }
+
+        public void UnequipAll()
+        {
+            foreach (var key in new List<EquipSlotType>(equippedItems.Keys))
+            {
+                Unequip(key);
             }
         }
     }

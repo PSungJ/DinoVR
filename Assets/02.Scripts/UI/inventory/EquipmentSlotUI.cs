@@ -1,77 +1,90 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using Game.Gameplay;
+using Game.Foundation;
 
-
-public class EquipmentSlotUI : MonoBehaviour
+namespace Game.UI.Interface
 {
-    [Header("Configuration")]
-    // 이 슬롯이 담당하는 장착 위치
-    [SerializeField] private EquipSlotType slotType;
-
-    [Header("Dependencies")]
-    // 장비 해제 로직을 호출하기 위한 참조
-    [SerializeField] private EquipmentManager equipmentManager;
-    // 해제된 아이템을 돌려보낼 인벤토리 참조
-    [SerializeField] private Inventory inventoryManager;
-
-    [Header("UI Elements")]
-    [SerializeField] private Image itemIcon;
-    // 장비가 없을 때 아이콘을 비활성화하기 위한 부모 GameObject (선택 사항)
-    [SerializeField] private GameObject emptyState;
-
-    // 이 슬롯이 어떤 타입의 장비를 담당하는지 반환
-    public EquipSlotType SlotType => slotType;
-
-    private void Start()
+    /// <summary>
+    /// 각 장비 슬롯(무기, 방어구 등)의 아이콘과 상태를 표시하며,
+    /// 클릭/VR 선택 시 장비 해제 기능을 제공합니다.
+    /// </summary>
+    public class EquipmentSlotUI : MonoBehaviour
     {
-        // 초기 UI 상태를 EquipmentManager로부터 받아와 설정
-        UpdateSlotUI(equipmentManager.CurrentEquipment[slotType]);
-    }
+        [Header("Configuration")]
+        [SerializeField] private EquipSlotType slotType;
 
-    // ----------------------------------------------------
-    // [UI 업데이트 로직] (EquipmentManager에서 호출됨)
-    // ----------------------------------------------------
-    // 장비 매니저에서 이 슬롯의 장비가 변경될 때 호출됩니다.
-    public void UpdateSlotUI(EquippableItemSO currentItem)
-    {
-        bool isEquipped = (currentItem != null);
+        [Header("UI Elements")]
+        [SerializeField] private Image itemIcon;
+        [SerializeField] private GameObject emptyState;
 
-        if (itemIcon != null)
+        private IEquipmentService equipmentService;
+        private IInventoryService inventoryService;
+
+        public EquipSlotType SlotType => slotType;
+
+        private void Awake()
         {
-            itemIcon.sprite = isEquipped ? currentItem.itemIcon : null;
-            itemIcon.enabled = isEquipped;
+            equipmentService = ServiceLocator.Get<IEquipmentService>();
+            inventoryService = ServiceLocator.Get<IInventoryService>();
         }
 
-        if (emptyState != null)
+        private void Start()
         {
-            emptyState.SetActive(!isEquipped);
-        }
-    }
-
-    // ----------------------------------------------------
-    // [장비 해제 로직] (VR Select 버튼 또는 UI 버튼과 연결)
-    // ----------------------------------------------------
-    // UI 버튼의 OnClick 이벤트나 VR Select 상호작용에 연결됩니다.
-    public void OnSlotSelect()
-    {
-        // 1. EquipmentManager에 장비 해제 요청 (아이템 반환받음)
-        EquippableItemSO itemToReturn = equipmentManager.Unequip(slotType);
-
-        if (itemToReturn != null)
-        {
-            // 2. 인벤토리에 아이템 추가 요청
-            bool wasAdded = inventoryManager.AddItem(itemToReturn, 1);
-
-            if (!wasAdded)
+            // 초기 상태 반영
+            if (equipmentService != null &&
+                equipmentService.CurrentEquipment.TryGetValue(slotType, out var equippedItem))
             {
-                // 3. 인벤토리가 가득 찼을 경우: 다시 장비 (해제 실패 처리)
-                // 🔥 오류 수정: Equip 메서드에 필수 매개변수인 inventorySlotIndex를 -1로 전달합니다.
-                equipmentManager.Equip(itemToReturn, -1);
-                Debug.LogWarning("Inventory is full! Unequip failed. Item re-equipped.");
-                // TODO: 사용자에게 인벤토리가 가득 찼음을 알리는 UI 피드백 제공
+                UpdateSlotUI(equippedItem);
             }
-            // AddItem이 성공하면 EquipmentManager가 UpdateSlotUI를 호출할 필요가 없습니다.
-            // EquipmentManager.Unequip() 호출 시 이미 UI 업데이트가 발생했기 때문입니다.
+            else
+            {
+                UpdateSlotUI(null);
+            }
+        }
+
+        // ----------------------------------------------------
+        // [UI 갱신 로직]
+        // ----------------------------------------------------
+        public void UpdateSlotUI(EquippableItemSO currentItem)
+        {
+            bool isEquipped = (currentItem != null);
+
+            if (itemIcon != null)
+            {
+                itemIcon.sprite = isEquipped ? currentItem.itemIcon : null;
+                itemIcon.enabled = isEquipped;
+            }
+
+            if (emptyState != null)
+                emptyState.SetActive(!isEquipped);
+        }
+
+        // ----------------------------------------------------
+        // [장비 해제 로직]
+        // ----------------------------------------------------
+        public void OnSlotSelect()
+        {
+            if (equipmentService == null)
+            {
+                Debug.LogError("[EquipmentSlotUI] IEquipmentService를 찾을 수 없습니다!");
+                return;
+            }
+
+            var unequippedItem = equipmentService.Unequip(slotType);
+            if (unequippedItem == null) return;
+
+            if (inventoryService != null)
+            {
+                bool added = inventoryService.AddItem(unequippedItem, 1);
+                if (!added)
+                {
+                    equipmentService.Equip(unequippedItem, -1);
+                    Debug.LogWarning($"[EquipmentSlotUI] 인벤토리가 가득 찼습니다. {unequippedItem.itemName}을 다시 장착했습니다.");
+                }
+            }
+
+            UpdateSlotUI(null);
         }
     }
 }

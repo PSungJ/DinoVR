@@ -1,27 +1,64 @@
 ﻿using System;
-using UnityEngine; // ItemBaseSO의 직렬화를 위해 필요할 수 있음
+using Game.Gameplay;
 
-// Unity의 기본 직렬화(Serialization)를 위해 [Serializable] 속성을 추가합니다.
-[Serializable]
-public struct InventorySlot
+namespace Game.InventorySystem
 {
-    // 슬롯에 할당된 아이템 ScriptableObject 데이터
-    public ItemBaseSO itemData;
-
-    // 현재 슬롯에 쌓여있는 아이템 개수
-    public int stackSize;
-
-    // 슬롯이 비어있는지 확인하는 속성
-    public bool IsEmpty => itemData == null || stackSize <= 0;
-
-    // 아이템이 있는 슬롯을 생성하는 생성자 (C# 9.0 이하에서도 호환)
-    public InventorySlot(ItemBaseSO data, int amount)
+    /// <summary>
+    /// 인벤토리, 퀵슬롯, 장비창 등에서 사용하는 공통 슬롯 구조체.
+    /// 아이템 ScriptableObject 참조와 수량을 보유합니다.
+    /// </summary>
+    [Serializable]
+    public struct InventorySlot
     {
-        // struct 생성자는 모든 필드를 명시적으로 초기화해야 합니다.
-        this.itemData = data;
-        this.stackSize = amount;
-    }
+        public ItemBaseSO itemData;
+        public int stackSize;
 
-   
-    public static InventorySlot Empty => new InventorySlot(null, 0);
+        public bool IsEmpty => itemData == null || stackSize <= 0;
+
+        public InventorySlot(ItemBaseSO data, int amount)
+        {
+            itemData = data;
+            stackSize = amount;
+        }
+
+        /// <summary>
+        /// 슬롯을 완전히 비웁니다.
+        /// </summary>
+        public static InventorySlot Empty => new InventorySlot(null, 0);
+
+        /// <summary>
+        /// 슬롯의 아이템을 하나 사용(감소)합니다.
+        /// </summary>
+        public void ConsumeOne()
+        {
+            if (stackSize > 0)
+                stackSize--;
+
+            if (stackSize <= 0)
+                this = Empty;
+        }
+
+        /// <summary>
+        /// 동일한 아이템을 추가로 스택할 수 있는지 검사합니다.
+        /// </summary>
+        public bool CanStack(ItemBaseSO newItem)
+        {
+            if (IsEmpty || newItem == null)
+                return false;
+
+            return itemData == newItem && stackSize < newItem.maxStackSize;
+        }
+
+        /// <summary>
+        /// 새 아이템을 스택합니다.
+        /// </summary>
+        public bool TryAddToStack(ItemBaseSO newItem, int amount)
+        {
+            if (!CanStack(newItem))
+                return false;
+
+            stackSize = Math.Min(stackSize + amount, newItem.maxStackSize);
+            return true;
+        }
+    }
 }

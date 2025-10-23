@@ -1,95 +1,87 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections.Generic;
+using Game.Gameplay;
+using Game.Foundation;
 
-// public enum StatusEffectType
-// {
-//     Fracture,      // 골절
-//     FoodPoisoning, // 식중
-//     Fatigue        // 피로
-// }
-
-public class StatusUI : MonoBehaviour
+namespace Game.UI.Interface
 {
-    [Header("Dependencies")]
-    // PlayerStats 참조 필수 (데이터를 가져올 곳)
-    [SerializeField] private PlayerStats playerStats;
-
-    [Header("Row 1 & 2: Health & Stamina Bars")]
-    // Image 컴포넌트 (Image Type: Filled) 할당
-    [SerializeField] private Image healthBarFill;
-    [SerializeField] private Image staminaBarFill;
-
-    [Header("Row 3: Status Icons")]
-    // 상태 이상 아이콘 GameObject 할당 (활성화/비활성화 처리용)
-    [SerializeField] private GameObject fractureIcon;
-    [SerializeField] private GameObject foodPoisoningIcon;
-    [SerializeField] private GameObject fatigueIcon;
-
-    // 최종 공격력 텍스트 (옵션)
-    [SerializeField] private Text attackValueText;
-
-    // 상태 이상 아이콘을 일관성 있게 관리하기 위한 Dictionary
-    private Dictionary<StatusEffectType, GameObject> statusIconMap;
-
-
-    private void Awake()
+    /// <summary>
+    /// 플레이어 상태(체력, 스태미나, 상태 이상 등)를 UI로 표시합니다.
+    /// PlayerStats 서비스에서 데이터를 받아 자동 업데이트됩니다.
+    /// </summary>
+    public class StatusUI : MonoBehaviour
     {
-        // PlayerStats에 정의된 StatusEffectType을 문제 없이 사용할 수 있습니다.
-        statusIconMap = new Dictionary<StatusEffectType, GameObject>
-        {
-            { StatusEffectType.Fracture, fractureIcon },
-            { StatusEffectType.FoodPoisoning, foodPoisoningIcon },
-            { StatusEffectType.Fatigue, fatigueIcon }
-        };
+        [Header("Bar UI Elements")]
+        [SerializeField] private Image healthBarFill;
+        [SerializeField] private Image staminaBarFill;
 
-        // 초기에는 모든 아이콘을 숨깁니다.
-        foreach (var icon in statusIconMap.Values)
+        [Header("Status Effect Icons")]
+        [SerializeField] private GameObject fractureIcon;
+        [SerializeField] private GameObject foodPoisoningIcon;
+        [SerializeField] private GameObject fatigueIcon;
+
+        [Header("Text UI Elements")]
+        [SerializeField] private TextMeshProUGUI attackValueText;
+
+        private IPlayerStatsService statsService;
+
+        private Dictionary<StatusEffectType, GameObject> statusIcons;
+
+        private void Awake()
         {
-            if (icon != null) icon.SetActive(false);
+            statsService = ServiceLocator.Get<IPlayerStatsService>();
+
+            // 상태 이상 아이콘 매핑
+            statusIcons = new Dictionary<StatusEffectType, GameObject>
+            {
+                { StatusEffectType.Fracture, fractureIcon },
+                { StatusEffectType.FoodPoisoning, foodPoisoningIcon },
+                { StatusEffectType.Fatigue, fatigueIcon }
+            };
+
+            // 초기화: 모든 아이콘 비활성화
+            foreach (var icon in statusIcons.Values)
+            {
+                if (icon != null)
+                    icon.SetActive(false);
+            }
         }
-    }
 
-    private void Start()
-    {
-        // 초기 UI 상태를 한 번 업데이트합니다.
-        if (playerStats != null)
+        private void Start()
         {
             UpdateUI();
         }
-    }
 
-    // 💡 핵심: UI 업데이트 함수 (PlayerStats의 변화 시 호출됨)
-    public void UpdateUI()
-    {
-        if (playerStats == null) return;
-        
-        // 1. 체력 및 스태미나 바 업데이트
-        if (healthBarFill != null)
+        // ----------------------------------------------------
+        // [UI 업데이트]
+        // ----------------------------------------------------
+        public void UpdateUI()
         {
-            healthBarFill.fillAmount = playerStats.GetHealthPercentage();
+            if (statsService == null)
+            {
+                Debug.LogWarning("[StatusUI] PlayerStatsService를 찾을 수 없습니다!");
+                return;
+            }
+
+            // 1. 체력 및 스태미나 바
+            if (healthBarFill != null)
+                healthBarFill.fillAmount = statsService.GetHealthPercentage();
+
+            if (staminaBarFill != null)
+                staminaBarFill.fillAmount = statsService.GetStaminaPercentage();
+
+            // 2. 상태 이상 아이콘
+            foreach (var kvp in statusIcons)
+            {
+                if (kvp.Value != null)
+                    kvp.Value.SetActive(statsService.IsEffectActive(kvp.Key));
+            }
+
+            // 3. 공격력 텍스트
+            if (attackValueText != null)
+                attackValueText.text = statsService.FinalAttack.ToString();
         }
-// TODO: GetStaminaPercentage() 함수 구현 시 주석 해제 필요
-// if (staminaBarFill != null)
-// {
-//     staminaBarFill.fillAmount = playerStats.GetStaminaPercentage();
-// }
-
-// 2. 상태 이상 아이콘 업데이트
-foreach (var pair in statusIconMap)
-{
-    if (pair.Value != null)
-    {
-        // PlayerStats에서 해당 상태 이상이 활성 상태인지 확인합니다.
-        bool isActive = playerStats.IsEffectActive(pair.Key);
-        pair.Value.SetActive(isActive);
-    }
-}
-
-// 3. 최종 공격력 텍스트 업데이트
-if (attackValueText != null)
-{
-    attackValueText.text = playerStats.GetFinalAttack().ToString();
-}
     }
 }

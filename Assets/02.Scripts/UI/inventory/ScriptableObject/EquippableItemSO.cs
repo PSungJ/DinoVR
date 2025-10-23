@@ -1,56 +1,60 @@
 ﻿using UnityEngine;
+using Game.Foundation;
+using Game.Gameplay;
 
-// EquippableItemSO는 ItemBaseSO를 상속받습니다.
-// ItemType, InventorySlot 구조체, EquipSlotType enum은 다른 파일(ItemBaseSO.cs, EquipmentManager.cs)에 정의되어 있습니다.
-
-[CreateAssetMenu(fileName = "NewEquippableItem", menuName = "Inventory/Equippable Item")]
-public class EquippableItemSO : ItemBaseSO
+namespace Game.InventorySystem
 {
-    // 장착 위치 (EquipmentManager.cs에 정의된 EquipSlotType 사용)
-    public EquipSlotType equipSlotType;
-
-    [Header("Equipment Stats")]
-    // PlayerStats에 반영될 공격력 보너스
-    public int attackModifier;
-
-    [Tooltip("PlayerStats에 반영될 방어력 보너스")]
-    public int defenseModifier;
-
-    private void OnEnable()
-    {
-        // 장비 아이템은 스택 불가 (최대 1개)
-        maxStackSize = 1;
-
-        // 장착 슬롯 타입에 따라 ItemType을 자동 설정합니다.
-        try
-        {
-            // EquipSlotType의 이름을 ItemType으로 파싱하여 할당합니다.
-            itemType = (ItemType)System.Enum.Parse(typeof(ItemType), equipSlotType.ToString());
-        }
-        catch (System.ArgumentException e)
-        {
-            // ItemType에 해당하는 항목이 없을 경우, Equipment 기본 타입으로 대체합니다.
-            Debug.LogError($"[EquippableItemSO] Failed to parse ItemType from {equipSlotType.ToString()}. Check if ItemType enum contains this value. Falling back to ItemType.Equipment. Error: {e.Message}");
-            itemType = ItemType.Equipment;
-        }
-    }
-
     /// <summary>
-    /// 장비 아이템 사용 로직 (장비 장착 시도)
+    /// 장비형 아이템 ScriptableObject (무기, 방어구 등)
     /// </summary>
-    public override void Use(int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)
+    [CreateAssetMenu(fileName = "NewEquippableItem", menuName = "Inventory/Items/Equippable Item")]
+    public class EquippableItemSO : ItemBaseSO
     {
-        // 기본 디버그 로그 호출
-        base.Use(slotIndex, playerHealth, equipmentManager);
+        [Header("Equip Settings")]
+        [Tooltip("이 아이템이 장착될 슬롯 종류 (Weapon, Armor 등)")]
+        public EquipSlotType equipSlotType;
 
-        if (equipmentManager != null)
+        [Header("Stat Modifiers")]
+        [Tooltip("플레이어의 공격력 증가량")]
+        public int attackModifier = 0;
+
+        [Tooltip("플레이어의 방어력 증가량")]
+        public int defenseModifier = 0;
+
+        private void OnEnable()
         {
-            // ⭐ [필수 수정] inventorySlotIndex 인수를 빠짐없이 전달합니다.
-            equipmentManager.Equip(this, slotIndex);
+            // 장비 아이템은 스택 불가
+            maxStackSize = 1;
+
+            // EquipSlotType 이름을 기반으로 ItemType 자동 설정
+            try
+            {
+                itemType = (ItemType)System.Enum.Parse(typeof(ItemType), equipSlotType.ToString());
+            }
+            catch
+            {
+                itemType = ItemType.Equipment;
+            }
         }
-        else
+
+        /// <summary>
+        /// 장비 아이템을 사용할 때 호출되는 로직 (ServiceLocator 기반)
+        /// </summary>
+        public override void Use(int slotIndex, IPlayerHealthService playerHealth, IEquipmentService equipmentManager)
         {
-            Debug.LogWarning("[EquippableItemSO] Cannot find EquipmentManager to equip item. Ensure EquipmentManager.Instance is available.");
+            base.Use(slotIndex, playerHealth, equipmentManager);
+
+            // ✅ ServiceLocator를 통해 EquipmentService 가져오기
+            var equipmentService = equipmentManager ?? ServiceLocator.Get<IEquipmentService>();
+
+            if (equipmentService != null)
+            {
+                equipmentService.EquipItem(this, slotIndex);
+            }
+            else
+            {
+                Debug.LogWarning($"[EquippableItemSO] EquipmentService를 찾을 수 없습니다. {itemName} 장착 실패");
+            }
         }
     }
 }

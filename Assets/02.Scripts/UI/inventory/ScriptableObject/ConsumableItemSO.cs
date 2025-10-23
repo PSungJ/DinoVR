@@ -1,37 +1,52 @@
 ﻿using UnityEngine;
+using Game.Gameplay;
+using Game.Foundation;
 
-[CreateAssetMenu(menuName = "Inventory/Items/Consumable Item")]
-public class ConsumableItemSO : ItemBaseSO
+namespace Game.InventorySystem
 {
-    [Header("Consumable Stats")]
-    [Tooltip("사용 시 회복되는 체력량")]
-    public int healthRestoreAmount = 25;
-
-    protected void OnEnable()
-    {
-        // Consumable 아이템 타입 강제 설정
-        itemType = ItemType.Consumable;
-    }
-
     /// <summary>
-    /// Consumable 아이템 사용 로직 (체력 회복 구현)
+    /// 사용 시 플레이어의 체력, 스태미나 등을 회복시키는 아이템 데이터.
     /// </summary>
-    public override void Use(int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)
+    [CreateAssetMenu(menuName = "Inventory/Items/Consumable Item")]
+    public class ConsumableItemSO : ItemBaseSO
     {
-        // base.Use 호출 시 playerHealth와 equipmentManager를 전달합니다.
-        base.Use(slotIndex, playerHealth, equipmentManager); // 기본 디버그 로그 호출
+        [Header("Consumable Effects")]
+        [Tooltip("사용 시 회복되는 체력량")]
+        public int healthRestoreAmount = 25;
 
-        // PlayerHealthComponent를 사용하여 체력 회복
-        if (playerHealth != null)
+        [Tooltip("사용 시 회복되는 스태미나량 (선택사항)")]
+        public int staminaRestoreAmount = 0;
+
+        private void OnEnable()
         {
-            playerHealth.Heal(healthRestoreAmount);
-            // ⭐ 테스트: TLS 오류가 사라지는지 확인하기 위해 로그를 주석 처리합니다.
-            // Debug.Log($"[Consumable Item] {itemName} 사용: 체력 {healthRestoreAmount} 회복 시도."); 
+            itemType = ItemType.Consumable;
+            maxStackSize = Mathf.Max(maxStackSize, 1);
         }
-        else
+
+        /// <summary>
+        /// 소비형 아이템 사용 시 로직 — 체력 또는 스태미나 회복.
+        /// </summary>
+        public override void Use(int slotIndex, IPlayerHealthService playerHealth, IEquipmentService equipment)
         {
-            // ⭐ 테스트: TLS 오류가 사라지는지 확인하기 위해 로그를 주석 처리합니다.
-            // Debug.LogWarning("[ConsumableItemSO] Cannot find PlayerHealthComponent to heal. Check if PlayerHealthComponent.Instance is correctly initialized.");
+            base.Use(slotIndex, playerHealth, equipment);
+
+            if (playerHealth == null)
+            {
+                Debug.LogWarning($"[ConsumableItemSO] No player health service found for {itemName}");
+                return;
+            }
+
+            if (healthRestoreAmount > 0)
+            {
+                playerHealth.Heal(healthRestoreAmount);
+                Debug.Log($"[ConsumableItemSO] {itemName}: +{healthRestoreAmount} HP restored.");
+            }
+
+            if (staminaRestoreAmount > 0)
+            {
+                playerHealth.RestoreMana(staminaRestoreAmount);
+                Debug.Log($"[ConsumableItemSO] {itemName}: +{staminaRestoreAmount} stamina restored.");
+            }
         }
     }
 }

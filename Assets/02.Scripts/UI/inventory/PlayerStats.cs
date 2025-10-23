@@ -1,123 +1,132 @@
 using UnityEngine;
 using System.Collections.Generic;
-using static UnityEditor.Progress;
+using Game.Foundation;
+using Game.Gameplay;
 
-// StatusEffectType Enum 정의
-public enum StatusEffectType
+namespace Game.Gameplay
 {
-    Fracture,      // 골절 (이동 속도 저하)
-    FoodPoisoning, // 식중 (지속 피해)
-    Fatigue        // 피로 (스테이터스 회복 속도 저하)
-}
-
-public class PlayerStats : MonoBehaviour
-{
-    // [Header("Dependencies")]
-    // StatusUI 참조 필수 (스탯 변화 시 UI 업데이트용)
-    [SerializeField] private StatusUI statusUI;
-
-    [Header("Base Stats")]
-    [SerializeField] private float maxHealth = 100f;
-    [SerializeField] private float maxStamina = 100f;
-    [SerializeField] private int baseAttack = 10;
-
-    private float currentHealth;
-    private float currentStamina;
-
-    // 장비로 인한 공격력 보너스 관리
-    private int equipmentAttackBonus = 0;
-
-    // 상태 이상 관리
-    private HashSet<StatusEffectType> activeStatusEffects = new HashSet<StatusEffectType>();
-    private Dictionary<StatusEffectType, float> statusDuration = new Dictionary<StatusEffectType, float>();
-
-    public float CurrentHealth => currentHealth;
-
-    private void Awake()
+    /// <summary>
+    /// 플레이어의 체력, 스태미나, 공격력 및 상태 이상을 관리하는 클래스.
+    /// 장비 효과나 소비 아이템 사용 시 수치가 갱신됩니다.
+    /// </summary>
+    public class PlayerStats : MonoBehaviour, IPlayerStatsService
     {
-        currentHealth = maxHealth;
-        currentStamina = maxStamina;
-    }
+        [Header("Base Stats")]
+        [SerializeField] private float maxHealth = 100f;
+        [SerializeField] private float maxStamina = 100f;
+        [SerializeField] private int baseAttack = 10;
 
-    // ----------------------------------------------------
-    // [UI 및 최종 스탯 확인 함수]
-    // ----------------------------------------------------
-    public float GetHealthPercentage()
-    {
-        return currentHealth / maxHealth;
-    }
+        private float currentHealth;
+        private float currentStamina;
+        private int equipmentAttackBonus = 0;
 
-    // TODO: GetStaminaPercentage() 함수 구현 (UI 바 표시용)
-    /*
-    public float GetStaminaPercentage()
-    {
-        return currentStamina / maxStamina;
-    }
-    */
+        [Header("UI Reference")]
+        [SerializeField] private StatusUI statusUI;
 
-    // 최종 공격력 반환 (기본 스탯 + 장비 보너스)
-    public int GetFinalAttack()
-    {
-        return baseAttack + equipmentAttackBonus;
-    }
+        // 상태 이상 관리
+        private readonly HashSet<StatusEffectType> activeStatusEffects = new();
+        private readonly Dictionary<StatusEffectType, float> effectDurations = new();
 
-// 상태 이상 활성화 여부 확인 (StatusUI 및 기타 로직 사용)
-public bool IsEffectActive(StatusEffectType type)
-{
-    return activeStatusEffects.Contains(type);
-}
+        public float CurrentHealth => currentHealth;
+        public float CurrentStamina => currentStamina;
+        public int FinalAttack => baseAttack + equipmentAttackBonus;
 
-// ----------------------------------------------------
-// [장비 스탯 반영 로직] (EquipmentManager에서 호출됨)
-// ----------------------------------------------------
-public void ApplyEquipmentModifiers(EquippableItemSO item)
-    {
-        equipmentAttackBonus += item.attackModifier;
-if (statusUI != null) statusUI.UpdateUI(); // UI 업데이트
-    }
+        private void Awake()
+        {
+            ServiceLocator.Register<IPlayerStatsService>(this);
+            currentHealth = maxHealth;
+            currentStamina = maxStamina;
+        }
 
-    public void RemoveEquipmentModifiers(EquippableItemSO item)
-    {
-        equipmentAttackBonus -= item.attackModifier;
-if (statusUI != null) statusUI.UpdateUI(); // UI 업데이트
-    }
-    
-    // ----------------------------------------------------
-    // [상태 이상 및 회복 로직] (ConsumableItem 사용 시 호출됨)
-    // ----------------------------------------------------
-    public void Restore(string effectType, float amount)
-{
-    if (effectType == "Health")
-    {
-        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
-    }
-    else if (effectType == "Stamina")
-    {
-        currentStamina = Mathf.Min(currentStamina + amount, maxStamina);
-    }
-    if (statusUI != null) statusUI.UpdateUI(); // UI 업데이트
-}
+        private void OnDestroy()
+        {
+            ServiceLocator.Unregister<IPlayerStatsService>(this);
+        }
 
-// 상태 이상 적용 (Duration 포함)
-public void ApplyStatus(StatusEffectType type, float duration)
-{
-    if (!activeStatusEffects.Contains(type))
-    {
-        activeStatusEffects.Add(type);
-        if (statusUI != null) statusUI.UpdateUI(); // UI 업데이트
-    }
-    statusDuration[type] = Time.time + duration;
-}
+        private void Update()
+        {
+            CheckStatusEffectDuration();
+        }
 
-// 상태 이상 제거
-public void RemoveStatus(StatusEffectType type)
-{
-    if (activeStatusEffects.Remove(type))
-    {
-        if (statusUI != null) statusUI.UpdateUI(); // UI 업데이트
-    }
-    statusDuration.Remove(type);
-}
+        // ----------------------------------------------------
+        // [기본 수치 계산]
+        // ----------------------------------------------------
+        public float GetHealthPercentage() => currentHealth / maxHealth;
+        public float GetStaminaPercentage() => currentStamina / maxStamina;
 
-    // TODO: Update 함수에서 Damage Over Time 및 Duration 체크 로직 구현 필요
+        // ----------------------------------------------------
+        // [장비 효과 적용/해제]
+        // ----------------------------------------------------
+        public void ApplyEquipmentModifiers(EquippableItemSO item)
+        {
+            equipmentAttackBonus += item.attackModifier;
+            statusUI?.UpdateUI();
+        }
+
+        public void RemoveEquipmentModifiers(EquippableItemSO item)
+        {
+            equipmentAttackBonus -= item.attackModifier;
+            statusUI?.UpdateUI();
+        }
+
+        // ----------------------------------------------------
+        // [회복 및 데미지]
+        // ----------------------------------------------------
+        public void Restore(string effectType, float amount)
+        {
+            if (effectType == "Health")
+                currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+            else if (effectType == "Stamina")
+                currentStamina = Mathf.Min(currentStamina + amount, maxStamina);
+
+            statusUI?.UpdateUI();
+        }
+
+        public void TakeDamage(float amount)
+        {
+            currentHealth = Mathf.Max(0, currentHealth - amount);
+            statusUI?.UpdateUI();
+        }
+
+        // ----------------------------------------------------
+        // [상태 이상 처리]
+        // ----------------------------------------------------
+        public void ApplyStatus(StatusEffectType type, float duration)
+        {
+            if (!activeStatusEffects.Contains(type))
+            {
+                activeStatusEffects.Add(type);
+                statusUI?.UpdateUI();
+            }
+
+            effectDurations[type] = Time.time + duration;
+        }
+
+        public void RemoveStatus(StatusEffectType type)
+        {
+            if (activeStatusEffects.Remove(type))
+                statusUI?.UpdateUI();
+
+            effectDurations.Remove(type);
+        }
+
+        public bool IsEffectActive(StatusEffectType type)
+        {
+            return activeStatusEffects.Contains(type);
+        }
+
+        private void CheckStatusEffectDuration()
+        {
+            List<StatusEffectType> expired = new();
+
+            foreach (var pair in effectDurations)
+            {
+                if (Time.time > pair.Value)
+                    expired.Add(pair.Key);
+            }
+
+            foreach (var type in expired)
+                RemoveStatus(type);
+        }
+    }
 }
