@@ -19,7 +19,7 @@ public class DinoRaptor : DinoBase
         {
             if (status.target != null)
             {
-                status.AddFear(1f, status.target);
+                status.AddFear(0.1f, status.target);
             }
         }
 
@@ -41,14 +41,10 @@ public class DinoRaptor : DinoBase
                     if (Time.time - lastRoarTime >= 5f)
                         ChangeState(DinoState.ROAR);
                 }
-                else if (RayCheck(status.target))
+                else if (status.RayCheck(status.target))
                 {
                     ChangeState(DinoState.CALL);
                     isAnimating = true;
-                }
-                else
-                {
-
                 }
             }
         }
@@ -160,6 +156,7 @@ public class DinoRaptor : DinoBase
 
     public void Calling()
     {
+        sound.PlayBark();
         Collider[] raptors = Physics.OverlapSphere(transform.position, 80f, LayerMask.GetMask("Dinosaur"));
         foreach (Collider col in raptors)
         {

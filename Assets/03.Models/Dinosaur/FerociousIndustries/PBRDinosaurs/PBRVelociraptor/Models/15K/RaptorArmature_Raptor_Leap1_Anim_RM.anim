@@ -83624,7 +83624,7 @@ AnimationClip:
   m_HasMotionFloatCurves: 1
   m_Events:
   - time: 0.18000479
-    functionName: Growl
+    functionName: PlayGrowl
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
