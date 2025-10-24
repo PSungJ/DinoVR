@@ -1,32 +1,42 @@
 using System;
 using System.Collections.Generic;
-using Game.UI.Interface;
 
 namespace Game.Foundation
 {
     /// <summary>
-    /// 게임 전역 서비스 등록 / 조회 시스템.
-    /// 싱글톤 패턴을 대체하는 안전한 의존성 주입 방식입니다.
+    /// 전역적인 게임 서비스 접근 관리용 싱글톤.
+    /// 예: ServiceLocator.Get<IInventoryService>().UseItem(0);
     /// </summary>
     public static class ServiceLocator
     {
-        // 등록된 서비스 저장소
+        /// <summary>
+        /// 모든 서비스 인스턴스를 저장하는 딕셔너리.
+        /// </summary>
         private static readonly Dictionary<Type, IGameService> _services = new();
 
         /// <summary>
-        /// 서비스 등록 (예: ServiceLocator.Register<IInventoryService>(this))
+        /// 서비스 등록
         /// </summary>
         public static void Register<T>(T service) where T : class, IGameService
         {
+            if (service == null)
+            {
+                UnityEngine.Debug.LogError($"[ServiceLocator] Attempted to register null service of type {typeof(T)}");
+                return;
+            }
+
             var type = typeof(T);
             if (_services.ContainsKey(type))
             {
+                UnityEngine.Debug.LogWarning($"[ServiceLocator] Service {type.Name} is already registered. Overwriting...");
                 _services[type] = service;
             }
             else
             {
                 _services.Add(type, service);
             }
+
+            UnityEngine.Debug.Log($"[ServiceLocator] Registered service: {type.Name}");
         }
 
         /// <summary>
@@ -35,14 +45,15 @@ namespace Game.Foundation
         public static void Unregister<T>(T service) where T : class, IGameService
         {
             var type = typeof(T);
-            if (_services.ContainsKey(type) && _services[type] == (object)service)
+            if (_services.ContainsKey(type))
             {
                 _services.Remove(type);
+                UnityEngine.Debug.Log($"[ServiceLocator] Unregistered service: {type.Name}");
             }
         }
 
         /// <summary>
-        /// 등록된 서비스 가져오기 (없으면 오류 로그)
+        /// 등록된 서비스 가져오기
         /// </summary>
         public static T Get<T>() where T : class, IGameService
         {
@@ -52,16 +63,17 @@ namespace Game.Foundation
                 return service as T;
             }
 
-            UnityEngine.Debug.LogError($"[ServiceLocator] 서비스 {type.Name}을(를) 찾을 수 없습니다.");
+            UnityEngine.Debug.LogWarning($"[ServiceLocator] Service of type {type.Name} not found!");
             return null;
         }
 
         /// <summary>
-        /// 모든 서비스 초기화
+        /// 모든 서비스 초기화 해제 (씬 전환 시 호출 가능)
         /// </summary>
-        public static void Clear()
+        public static void ClearAll()
         {
             _services.Clear();
+            UnityEngine.Debug.Log("[ServiceLocator] Cleared all registered services.");
         }
     }
 }
