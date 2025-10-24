@@ -24019,44 +24019,45 @@ MonoBehaviour:
   - {fileID: 1729473830}
   inventoryReference: {fileID: 1660956725}
   inventoryUIRoot: {fileID: 1858539432}
-  toggleInventoryAction:
+  selectedSlotIndex: 0
+  nextSlotAction:
     m_UseReference: 1
     m_Action:
-      m_Name: Toggle Inventory
+      m_Name: Next Slot
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: ab96d711-3a7f-47bf-b150-c017ed7a58e6
+      m_Id: c6325389-59bc-4756-a2f8-fa667aa90a2c
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 2438784830280936975, guid: c348712bda248c246b8c49b3db54643f,
+      type: 3}
+  previousSlotAction:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Previous Slot
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: ab6c3fc6-4ec4-402f-beab-f67e582bfc39
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 556300600241216982, guid: c348712bda248c246b8c49b3db54643f,
       type: 3}
-  useQuickSlotAction:
+  useItemAction:
     m_UseReference: 1
     m_Action:
-      m_Name: Use Quick Slot
+      m_Name: Use Item
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 84a304fb-e763-4d1f-8152-67ee6c0accc3
+      m_Id: 7a4948d6-5b66-4913-bcb3-e6e88673ff94
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 4223697728159593580, guid: c348712bda248c246b8c49b3db54643f,
-      type: 3}
-  cycleQuickSlotAction:
-    m_UseReference: 1
-    m_Action:
-      m_Name: Cycle Quick Slot
-      m_Type: 0
-      m_ExpectedControlType: 
-      m_Id: 46b02e83-3cc7-439b-9a5e-bcfc5645b3d2
-      m_Processors: 
-      m_Interactions: 
-      m_SingletonActionBindings: []
-      m_Flags: 0
-    m_Reference: {fileID: 2438784830280936975, guid: c348712bda248c246b8c49b3db54643f,
       type: 3}
 --- !u!114 &1660956723
 MonoBehaviour:
@@ -77267,19 +77268,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd5b702cb984ff3488d0a5ffb119e6bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  quickSlotManager: {fileID: 1660956722}
-  slotUIRoots:
-  - {fileID: 671833064}
-  - {fileID: 1642130279}
-  - {fileID: 1729473821}
-  - {fileID: 0}
-  - {fileID: 0}
-  slotIcons:
-  - {fileID: 671833066}
-  - {fileID: 1642130281}
-  - {fileID: 1729473823}
-  - {fileID: 0}
-  - {fileID: 0}
+  slotUpdaters: []
   selectionIndicator: {fileID: 1937678769}
 --- !u!114 &2083635287
 MonoBehaviour:

@@ -1,56 +1,131 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Linq;
+using System; // Action ì´ë²¤íŠ¸ë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ ì¶”ê°€
 
+/// <summary>
+/// í€µìŠ¬ë¡¯ ì „ì²´ UIë¥¼ ê´€ë¦¬í•˜ëŠ” ì»´í¬ë„ŒíŠ¸ì…ë‹ˆë‹¤.
+/// QuickSlotManagerì˜ ì´ë²¤íŠ¸ë¥¼ êµ¬ë…í•˜ì—¬ ì•„ì´í…œ ë° ì„ íƒ ìƒíƒœë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤.
+/// </summary>
 public class QuickSlotUI : MonoBehaviour
 {
     [Header("Dependencies")]
-    // QuickSlotManager ÂüÁ¶ ÇÊ¼ö (¼±ÅÃ ÀÎµ¦½º¸¦ ¹Ş¾Æ¿È)
-    [SerializeField] private QuickSlotManager quickSlotManager;
+    // QuickSlotManager ì¸ìŠ¤í„´ìŠ¤ ì°¸ì¡° (Awakeì—ì„œ ê°€ì ¸ì˜´)
+    private QuickSlotManager quickSlotManager;
 
-    [Header("UI Elements (5 Slots)")]
-    // 5°³ÀÇ ½½·Ô UI GameObject ·çÆ®¸¦ ¼ø¼­´ë·Î ÇÒ´çÇÕ´Ï´Ù.
-    [SerializeField] private List<GameObject> slotUIRoots = new List<GameObject>(5); 
-    // °¢ ½½·ÔÀÇ ¾ÆÀÌÄÜ Image ÄÄÆ÷³ÍÆ®¸¦ ¼ø¼­´ë·Î ÇÒ´çÇÕ´Ï´Ù.
-    [SerializeField] private List<Image>slotIcons = new List<Image>(5); 
+    // ì¸ë²¤í† ë¦¬/í€µìŠ¬ë¡¯ ê³µìš© ìŠ¬ë¡¯ UI ì—…ë°ì´íŠ¸ ì»´í¬ë„ŒíŠ¸
+    // ì´ ë°°ì—´/ë¦¬ìŠ¤íŠ¸ì—ëŠ” QuickSlotManager.quickSlots ë°°ì—´ê³¼ 1:1ë¡œ ë§¤ì¹­ë˜ëŠ” UI ìŠ¬ë¡¯ì´ í• ë‹¹ë˜ì–´ì•¼ í•©ë‹ˆë‹¤.
+    [Header("UI Elements (Slots)")]
+    // SlotUIUpdater.csì— ì •ì˜ëœ ì»´í¬ë„ŒíŠ¸ë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
+    [SerializeField] private List<SlotUIUpdater> slotUpdaters = new List<SlotUIUpdater>();
 
     [Header("Selection Indicator")]
-    // ÇöÀç ¼±ÅÃµÈ ½½·ÔÀ» °­Á¶ÇÏ´Â UI ¿ä¼Ò (¿¹: Å×µÎ¸®, ÇÏÀÌ¶óÀÌÆ® ÀÌ¹ÌÁö µî)
-    [SerializeField] private GameObject selectionIndicator; 
+    // í˜„ì¬ ì„ íƒëœ ìŠ¬ë¡¯ì„ ê°•ì¡°í•˜ëŠ” UI ìš”ì†Œ (ì˜ˆ: í…Œë‘ë¦¬, í•˜ì´ë¼ì´íŠ¸ ì´ë¯¸ì§€ ë“±)
+    [SerializeField] private GameObject selectionIndicator;
 
-    // ----------------------------------------------------
-    // [¾ÆÀÌÄÜ ¾÷µ¥ÀÌÆ®]
-    // ----------------------------------------------------
-    // Manager¿¡¼­ ¾ÆÀÌÅÛÀÌ ÇÒ´ç/Á¦°ÅµÉ ¶§ È£ÃâµË´Ï´Ù.
-    public void UpdateSlot(int index, ItemBaseSO item)
+    // QuickSlotManager.quickSlotsì˜ í¬ê¸°ì™€ slotUpdatersì˜ í¬ê¸°ê°€ ì¼ì¹˜í•˜ëŠ”ì§€ í™•ì¸
+    private int quickSlotCount = 0;
+
+
+    private void Awake()
     {
-        if (index >= 0 && index < slotIcons.Count && slotIcons[index] != null)
+        // ì‹±ê¸€í†¤ ì¸ìŠ¤í„´ìŠ¤ ê°€ì ¸ì˜¤ê¸°
+        quickSlotManager = QuickSlotManager.Instance;
+
+        if (quickSlotManager == null)
         {
-            bool hasItem = (item != null);
-            slotIcons[index].sprite = hasItem ? item.itemIcon : null;
-            slotIcons[index].enabled = hasItem;
+            Debug.LogError("[QuickSlotUI] QuickSlotManager.Instanceë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ì‹¤í–‰ ìˆœì„œë¥¼ í™•ì¸í•˜ì„¸ìš”.");
+            return;
         }
+
+        quickSlotCount = slotUpdaters.Count;
+
+        // í€µìŠ¬ë¡¯ ë§¤ë‹ˆì €ì— **ì´ë²¤íŠ¸ ë¦¬ìŠ¤ë„ˆ ë“±ë¡**
+        quickSlotManager.OnQuickSlotChanged += UpdateSlotUI;
+        quickSlotManager.OnQuickSlotSelectionChanged += UpdateSelectionUI;
+    }
+
+    private void Start()
+    {
+        // ì´ˆê¸° UI ìƒíƒœë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.
+
+        // 1. ëª¨ë“  ìŠ¬ë¡¯ ì•„ì´ì½˜ ì´ˆê¸°í™” (Managerì˜ ë°ì´í„°ë¡œ)
+        // quickSlots ë°°ì—´ì˜ í¬ê¸°ì™€ slotUpdaters ë¦¬ìŠ¤íŠ¸ì˜ í¬ê¸°ê°€ ë‹¤ë¥´ë©´ ì˜¤ë¥˜ê°€ ë°œìƒí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+        if (quickSlotManager.quickSlots != null && quickSlotManager.quickSlots.Length == quickSlotCount)
+        {
+            for (int i = 0; i < quickSlotManager.quickSlots.Length; i++)
+            {
+                InventorySlot slotData = quickSlotManager.quickSlots[i];
+                // ItemBaseSOì™€ countë¥¼ í¬í•¨í•˜ì—¬ UpdateSlotUI í˜¸ì¶œ
+                UpdateSlotUI(i, slotData.itemData, slotData.stackSize);
+            }
+        }
+        else
+        {
+            Debug.LogError("[QuickSlotUI] QuickSlotManagerì˜ quickSlots ë°°ì—´ í¬ê¸°ê°€ QuickSlotUIì˜ SlotUpdaters í¬ê¸°ì™€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤. ì¸ìŠ¤í™í„° ì„¤ì •ì„ í™•ì¸í•˜ì„¸ìš”.");
+        }
+
+
+        // 2. ì´ˆê¸° ì„ íƒ ìƒíƒœ í•˜ì´ë¼ì´íŠ¸ ì„¤ì •
+        UpdateSelectionUI(quickSlotManager.selectedSlotIndex);
     }
 
     // ----------------------------------------------------
-    // [¼±ÅÃ »óÅÂ ¾÷µ¥ÀÌÆ®]
+    // [ì•„ì´í…œ ì—…ë°ì´íŠ¸] (Managerì˜ OnQuickSlotChanged ì´ë²¤íŠ¸ í•¸ë“¤ëŸ¬)
     // ----------------------------------------------------
-    // Manager¿¡¼­ ½½·ÔÀÌ º¯°æµÇ°Å³ª ÃÊ±âÈ­µÉ ¶§ È£ÃâµË´Ï´Ù.
-    public void UpdateSelection(int newIndex)
+    /// <summary>
+    /// Managerë¡œë¶€í„° ìŠ¬ë¡¯ ë³€ê²½ ì•Œë¦¼ì„ ë°›ì•„ UIë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤.
+    /// </summary>
+    public void UpdateSlotUI(int index, ItemBaseSO item, int count)
     {
-        if (newIndex >= 0 && newIndex < slotUIRoots.Count && selectionIndicator != null)
+        if (index < 0 || index >= quickSlotCount || slotUpdaters[index] == null)
         {
-            // ¼±ÅÃµÈ ½½·ÔÀÇ À§Ä¡·Î °­Á¶ UI¸¦ ÀÌµ¿½ÃÅµ´Ï´Ù.
-            selectionIndicator.transform.position = slotUIRoots[newIndex].transform.position;
-            // °­Á¶ UI¸¦ È°¼ºÈ­ÇÕ´Ï´Ù.
-            selectionIndicator.SetActive(true);
+            return;
         }
-        else if (selectionIndicator != null)
+
+        // SlotUIUpdaterì˜ ê³µìš© í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì—¬ UI ê°±ì‹ 
+        slotUpdaters[index].UpdateSlotUI(item, count);
+    }
+
+    /// <summary>
+    /// í˜„ì¬ ì„ íƒëœ í€µìŠ¬ë¡¯ì˜ í•˜ì´ë¼ì´íŠ¸ë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤. (Managerì˜ OnQuickSlotSelectionChanged ì´ë²¤íŠ¸ í•¸ë“¤ëŸ¬)
+    /// </summary>
+    public void UpdateSelectionUI(int newSelectedIndex)
+    {
+        if (newSelectedIndex < 0 || newSelectedIndex >= quickSlotCount) return;
+
+        // 1. ëª¨ë“  ìŠ¬ë¡¯ì˜ í•˜ì´ë¼ì´íŠ¸ ì œê±°
+        foreach (var updater in slotUpdaters)
         {
-            // À¯È¿ÇÏÁö ¾ÊÀº ÀÎµ¦½ºÀÎ °æ¿ì ºñÈ°¼ºÈ­ (¼±ÅÃ ÇØÁ¦)
-            selectionIndicator.SetActive(false);
+            if (updater != null)
+            {
+                updater.SetHighlight(false);
+            }
+        }
+
+        // 2. ì„ íƒëœ ìŠ¬ë¡¯ì— í•˜ì´ë¼ì´íŠ¸ ì ìš©
+        if (slotUpdaters[newSelectedIndex] != null)
+        {
+            slotUpdaters[newSelectedIndex].SetHighlight(true);
+
+            // 3. ì„ íƒ í‘œì‹œê¸°(ì˜ˆ: í…Œë‘ë¦¬ ì´ë¯¸ì§€)ë¥¼ í•´ë‹¹ ìŠ¬ë¡¯ì˜ ìœ„ì¹˜ë¡œ ì´ë™ (ì„ íƒ ì‚¬í•­)
+            if (selectionIndicator != null)
+            {
+                // UIUpdater ì»´í¬ë„ŒíŠ¸ì˜ Transformì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
+                selectionIndicator.transform.position = slotUpdaters[newSelectedIndex].transform.position;
+                selectionIndicator.SetActive(true);
+            }
         }
     }
-    
-    // TODO: Awake/Start¿¡¼­ Manager·ÎºÎÅÍ ÃÊ±â µ¥ÀÌÅÍ¸¦ ¹Ş¾Æ¿Í ÀüÃ¼ UI¸¦ ¼³Á¤ÇÏ´Â ·ÎÁ÷ Ãß°¡
+
+    private void OnDestroy()
+    {
+        if (quickSlotManager != null)
+        {
+            // êµ¬ë… í•´ì œ (GC ì´ìŠˆ ë°©ì§€)
+            quickSlotManager.OnQuickSlotChanged -= UpdateSlotUI;
+            quickSlotManager.OnQuickSlotSelectionChanged -= UpdateSelectionUI;
+        }
+    }
 }

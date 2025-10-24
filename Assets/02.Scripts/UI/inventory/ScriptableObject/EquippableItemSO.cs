@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// EquippableItemSO.cs (전체 코드)
+using UnityEngine;
 
 // EquippableItemSO는 ItemBaseSO를 상속받습니다.
 // ItemType, InventorySlot 구조체, EquipSlotType enum은 다른 파일(ItemBaseSO.cs, EquipmentManager.cs)에 정의되어 있습니다.
@@ -38,6 +39,7 @@ public class EquippableItemSO : ItemBaseSO
     /// <summary>
     /// 장비 아이템 사용 로직 (장비 장착 시도)
     /// </summary>
+    // 🔥 시그니처 확인: ItemBaseSO와 동일한 (int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)를 사용합니다.
     public override void Use(int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)
     {
         // 기본 디버그 로그 호출
@@ -45,12 +47,13 @@ public class EquippableItemSO : ItemBaseSO
 
         if (equipmentManager != null)
         {
-            // ⭐ [필수 수정] inventorySlotIndex 인수를 빠짐없이 전달합니다.
+            // EquipmentManager에게 이 아이템을 장착하도록 요청합니다.
+            // 성공적으로 장착되면 Inventory.cs/QuickSlotManager.cs에서 슬롯 데이터가 갱신됩니다.
             equipmentManager.Equip(this, slotIndex);
         }
         else
         {
-            Debug.LogWarning("[EquippableItemSO] Cannot find EquipmentManager to equip item. Ensure EquipmentManager.Instance is available.");
+            Debug.LogWarning("[EquippableItemSO] EquipmentManager 인스턴스를 찾을 수 없어 아이템을 장착할 수 없습니다.");
         }
     }
 }

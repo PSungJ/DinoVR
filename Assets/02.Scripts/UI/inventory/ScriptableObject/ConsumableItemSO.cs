@@ -16,22 +16,24 @@ public class ConsumableItemSO : ItemBaseSO
     /// <summary>
     /// Consumable 아이템 사용 로직 (체력 회복 구현)
     /// </summary>
+    // 🔥 수정: 시그니처를 ItemBaseSO.Use(int, PlayerHealthComponent, EquipmentManager)와 일치시켰습니다.
     public override void Use(int slotIndex, PlayerHealthComponent playerHealth, EquipmentManager equipmentManager)
     {
-        // base.Use 호출 시 playerHealth와 equipmentManager를 전달합니다.
-        base.Use(slotIndex, playerHealth, equipmentManager); // 기본 디버그 로그 호출
+        // 기본 디버그 로그 호출
+        base.Use(slotIndex, playerHealth, equipmentManager);
 
         // PlayerHealthComponent를 사용하여 체력 회복
         if (playerHealth != null)
         {
             playerHealth.Heal(healthRestoreAmount);
-            // ⭐ 테스트: TLS 오류가 사라지는지 확인하기 위해 로그를 주석 처리합니다.
             // Debug.Log($"[Consumable Item] {itemName} 사용: 체력 {healthRestoreAmount} 회복 시도."); 
         }
         else
         {
-            // ⭐ 테스트: TLS 오류가 사라지는지 확인하기 위해 로그를 주석 처리합니다.
-            // Debug.LogWarning("[ConsumableItemSO] Cannot find PlayerHealthComponent to heal. Check if PlayerHealthComponent.Instance is correctly initialized.");
+            Debug.LogWarning("[ConsumableItemSO] Cannot find PlayerHealthComponent to heal. Check Scene setup.");
         }
+
+        // 소비 아이템이므로, 아이템 사용 후에는 이 ConsumableItemSO를 사용하는
+        // Inventory.cs 또는 QuickSlotManager.cs에서 스택 감소 처리가 진행됩니다.
     }
 }
