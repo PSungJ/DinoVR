@@ -1,19 +1,19 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using static UnityEditor.Progress;
 
-// StatusEffectType Enum Á¤ÀÇ
+// ----------------------------------------------------
+// [ìƒíƒœ ì´ìƒ íƒ€ì… Enum]
+// ----------------------------------------------------
 public enum StatusEffectType
 {
-    Fracture,      // °ñÀı (ÀÌµ¿ ¼Óµµ ÀúÇÏ)
-    FoodPoisoning, // ½ÄÁß (Áö¼Ó ÇÇÇØ)
-    Fatigue        // ÇÇ·Î (½ºÅ×ÀÌÅÍ½º È¸º¹ ¼Óµµ ÀúÇÏ)
+    Fracture,      // ê³¨ì ˆ (ì´ë™ ì†ë„ ì €í•˜)
+    FoodPoisoning, // ì‹ì¤‘ (ì§€ì† í”¼í•´)
+    Fatigue        // í”¼ë¡œ (ìŠ¤í…Œì´í„°ìŠ¤ íšŒë³µ ì†ë„ ì €í•˜)
 }
 
 public class PlayerStats : MonoBehaviour
 {
-    // [Header("Dependencies")]
-    // StatusUI ÂüÁ¶ ÇÊ¼ö (½ºÅÈ º¯È­ ½Ã UI ¾÷µ¥ÀÌÆ®¿ë)
     [SerializeField] private StatusUI statusUI;
 
     [Header("Base Stats")]
@@ -21,103 +21,121 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private float maxStamina = 100f;
     [SerializeField] private int baseAttack = 10;
 
-    private float currentHealth;
+    [SerializeField] private float currentHealth;
     private float currentStamina;
 
-    // Àåºñ·Î ÀÎÇÑ °ø°İ·Â º¸³Ê½º °ü¸®
     private int equipmentAttackBonus = 0;
 
-    // »óÅÂ ÀÌ»ó °ü¸®
     private HashSet<StatusEffectType> activeStatusEffects = new HashSet<StatusEffectType>();
     private Dictionary<StatusEffectType, float> statusDuration = new Dictionary<StatusEffectType, float>();
 
     public float CurrentHealth => currentHealth;
 
+    // ----------------------------------------------------
+    // ğŸ”¹ Shader Graph ë¨¸í‹°ë¦¬ì–¼ ì—°ë™ìš©
+    // ----------------------------------------------------
+    [Header("Shader Graph Health Bar Material")]
+    [Tooltip("Shader Graphë¡œ ë§Œë“  ì²´ë ¥ë°” ë¨¸í‹°ë¦¬ì–¼ì„ ì—°ê²°í•©ë‹ˆë‹¤.")]
+    [SerializeField] private Material healthBarMaterial; // âœ… ë¨¸í‹°ë¦¬ì–¼ ì§ì ‘ ì°¸ì¡°
+
     private void Awake()
     {
         currentHealth = maxHealth;
         currentStamina = maxStamina;
-    }
 
+        // ì‹œì‘ ì‹œ ë¨¸í‹°ë¦¬ì–¼ ì´ˆê¸°í™”
+        UpdateHealthBarMaterial();
+    }
+    
     // ----------------------------------------------------
-    // [UI ¹× ÃÖÁ¾ ½ºÅÈ È®ÀÎ ÇÔ¼ö]
+    // [UI ë° ìµœì¢… ìŠ¤íƒ¯ í™•ì¸ í•¨ìˆ˜]
     // ----------------------------------------------------
     public float GetHealthPercentage()
     {
         return currentHealth / maxHealth;
     }
 
-    // TODO: GetStaminaPercentage() ÇÔ¼ö ±¸Çö (UI ¹Ù Ç¥½Ã¿ë)
-    /*
-    public float GetStaminaPercentage()
-    {
-        return currentStamina / maxStamina;
-    }
-    */
-
-    // ÃÖÁ¾ °ø°İ·Â ¹İÈ¯ (±âº» ½ºÅÈ + Àåºñ º¸³Ê½º)
     public int GetFinalAttack()
     {
         return baseAttack + equipmentAttackBonus;
     }
 
-// »óÅÂ ÀÌ»ó È°¼ºÈ­ ¿©ºÎ È®ÀÎ (StatusUI ¹× ±âÅ¸ ·ÎÁ÷ »ç¿ë)
-public bool IsEffectActive(StatusEffectType type)
-{
-    return activeStatusEffects.Contains(type);
-}
+    public bool IsEffectActive(StatusEffectType type)
+    {
+        return activeStatusEffects.Contains(type);
+    }
 
-// ----------------------------------------------------
-// [Àåºñ ½ºÅÈ ¹İ¿µ ·ÎÁ÷] (EquipmentManager¿¡¼­ È£ÃâµÊ)
-// ----------------------------------------------------
-public void ApplyEquipmentModifiers(EquippableItemSO item)
+    // ----------------------------------------------------
+    // [ì¥ë¹„ ìŠ¤íƒ¯ ë°˜ì˜ ë¡œì§]
+    // ----------------------------------------------------
+    public void ApplyEquipmentModifiers(EquippableItemSO item)
     {
         equipmentAttackBonus += item.attackModifier;
-if (statusUI != null) statusUI.UpdateUI(); // UI ¾÷µ¥ÀÌÆ®
+        if (statusUI != null) statusUI.UpdateUI();
     }
 
     public void RemoveEquipmentModifiers(EquippableItemSO item)
     {
         equipmentAttackBonus -= item.attackModifier;
-if (statusUI != null) statusUI.UpdateUI(); // UI ¾÷µ¥ÀÌÆ®
+        if (statusUI != null) statusUI.UpdateUI();
     }
-    
+
     // ----------------------------------------------------
-    // [»óÅÂ ÀÌ»ó ¹× È¸º¹ ·ÎÁ÷] (ConsumableItem »ç¿ë ½Ã È£ÃâµÊ)
+    // [ìŠ¤íƒ¯ íšŒë³µ / ìƒíƒœ ì´ìƒ ë¡œì§]
     // ----------------------------------------------------
     public void Restore(string effectType, float amount)
-{
-    if (effectType == "Health")
     {
-        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
-    }
-    else if (effectType == "Stamina")
-    {
-        currentStamina = Mathf.Min(currentStamina + amount, maxStamina);
-    }
-    if (statusUI != null) statusUI.UpdateUI(); // UI ¾÷µ¥ÀÌÆ®
-}
+        if (effectType == "Health")
+        {
+            currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+            UpdateHealthBarMaterial(); // âœ… ì²´ë ¥ íšŒë³µ ì‹œ ë¨¸í‹°ë¦¬ì–¼ ê°±ì‹ 
+        }
+        else if (effectType == "Stamina")
+        {
+            currentStamina = Mathf.Min(currentStamina + amount, maxStamina);
+        }
 
-// »óÅÂ ÀÌ»ó Àû¿ë (Duration Æ÷ÇÔ)
-public void ApplyStatus(StatusEffectType type, float duration)
-{
-    if (!activeStatusEffects.Contains(type))
-    {
-        activeStatusEffects.Add(type);
-        if (statusUI != null) statusUI.UpdateUI(); // UI ¾÷µ¥ÀÌÆ®
+        if (statusUI != null) statusUI.UpdateUI();
     }
-    statusDuration[type] = Time.time + duration;
-}
 
-// »óÅÂ ÀÌ»ó Á¦°Å
-public void RemoveStatus(StatusEffectType type)
-{
-    if (activeStatusEffects.Remove(type))
+    public void ApplyStatus(StatusEffectType type, float duration)
     {
-        if (statusUI != null) statusUI.UpdateUI(); // UI ¾÷µ¥ÀÌÆ®
+        if (!activeStatusEffects.Contains(type))
+        {
+            activeStatusEffects.Add(type);
+            if (statusUI != null) statusUI.UpdateUI();
+        }
+        statusDuration[type] = Time.time + duration;
     }
-    statusDuration.Remove(type);
-}
 
-    // TODO: Update ÇÔ¼ö¿¡¼­ Damage Over Time ¹× Duration Ã¼Å© ·ÎÁ÷ ±¸Çö ÇÊ¿ä
+    public void RemoveStatus(StatusEffectType type)
+    {
+        if (activeStatusEffects.Remove(type))
+        {
+            if (statusUI != null) statusUI.UpdateUI();
+        }
+        statusDuration.Remove(type);
+    }
+
+    // ----------------------------------------------------
+    // âœ… Shader Graph ë¨¸í‹°ë¦¬ì–¼ì˜ _FillAmount ì—…ë°ì´íŠ¸
+    // ----------------------------------------------------
+    private void UpdateHealthBarMaterial()
+    {
+        if (healthBarMaterial != null)
+        {
+            float fillRatio = currentHealth / maxHealth;
+            healthBarMaterial.SetFloat("_FillAmount", fillRatio);
+        }
+    }
+
+    // ë‚˜ì¤‘ì— TakeDamage(float dmg) ì¶”ê°€ ì‹œì—ë„
+    // UpdateHealthBarMaterial() í˜¸ì¶œí•´ì£¼ë©´ ë©ë‹ˆë‹¤.
+
+    public void TakeDamage(float amount)
+    {
+        currentHealth -= amount;
+        UpdateHealthBarMaterial();
+
+    }
 }
