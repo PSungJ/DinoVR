@@ -269,7 +269,7 @@ public class QuickSlotManager : MonoBehaviour
     /// 특정 퀵슬롯의 데이터 변경을 UI에 알립니다.
     /// </summary>
     /// <param name="internalIndex">퀵슬롯의 내부 인덱스 (0, 1, 2...)</param>
-    private void NotifySlotChanged(int internalIndex)
+    public void NotifySlotChanged(int internalIndex)
     {
         if (internalIndex < 0 || internalIndex >= quickSlotCount) return;
 

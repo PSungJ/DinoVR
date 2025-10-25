@@ -1,5 +1,4 @@
-﻿// ItemBaseSO.cs (수정된 전체 코드)
-using UnityEngine;
+﻿using UnityEngine;
 
 // ItemType enum이 ItemBaseSO의 itemType 필드에서 사용됩니다.
 public enum ItemType
@@ -21,11 +20,19 @@ public abstract class ItemBaseSO : ScriptableObject
     [Header("Base Item Data")]
     public string itemName;
     public ItemType itemType;
+
+    // UI 슬롯에 표시될 2D 스프라이트
     public Sprite itemIcon;
+
+    // 3D 모델의 프리팹 (필요에 따라)
     public GameObject itemPrefab;
 
     [TextArea(3, 5)]
     public string description;
+
+    // 🔥 [추가]: 3D 모델의 Material Albedo에 적용될 텍스처
+    [Header("Rendering")]
+    public Texture2D item3DTexture;
 
     // 최대 스택 크기
     [Header("Stacking")]

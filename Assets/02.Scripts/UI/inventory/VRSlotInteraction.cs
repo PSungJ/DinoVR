@@ -3,7 +3,10 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq; // Concat을 사용하기 위해 필요
+using System.Linq;
+using System;
+
+// InventorySlot 구조체와 Inventory/QuickSlotManager 클래스가 전역에서 참조 가능하다고 가정합니다.
 
 public class VRSlotInteraction : MonoBehaviour
 {
@@ -12,10 +15,14 @@ public class VRSlotInteraction : MonoBehaviour
     [SerializeField] private int slotIndex = -1;
 
     private Image slotImage;
-    // ⭐ 변경: CustomSlotGrabInteractable로 타입 변경
     private CustomSlotGrabInteractable grabInteractable;
     private Collider slotCollider;
     private SlotUIUpdater uiUpdater;
+
+    // 3D 모델 렌더링 및 텍스처 동적 변경을 위한 필드
+    private MeshRenderer itemMeshRenderer;
+    private Material itemModelMaterialInstance;
+    private static readonly int BaseMapPropertyID = Shader.PropertyToID("_BaseMap");
 
     // Layer Switching 필드
     private int originalLayer;
@@ -52,38 +59,39 @@ public class VRSlotInteraction : MonoBehaviour
         slotCollider = GetComponent<Collider>();
         uiUpdater = GetComponent<SlotUIUpdater>();
 
-        // ⭐ CustomSlotGrabInteractable 가져오기 (타입 변경 반영)
+        // CustomSlotGrabInteractable 가져오기
         grabInteractable = GetComponentInChildren<CustomSlotGrabInteractable>();
 
         if (grabInteractable != null)
         {
-            // 인덱스 연결
-            grabInteractable.slotIndex = this.slotIndex;
+            // 3D 모델 렌더링 컴포넌트 가져오기
+            itemMeshRenderer = grabInteractable.GetComponentInChildren<MeshRenderer>();
 
-            // 이벤트 연결
+            if (itemMeshRenderer != null)
+            {
+                // Material 인스턴스를 가져와 개별적으로 수정할 수 있도록 준비
+                itemModelMaterialInstance = itemMeshRenderer.material;
+                // 초기에는 렌더러 비활성화
+                itemMeshRenderer.enabled = false;
+            }
+            else
+            {
+                Debug.LogWarning($"[VRSlotInteraction] Slot Index {slotIndex}: CustomSlotGrabInteractable의 자식에서 MeshRenderer를 찾을 수 없습니다! 3D 아이템 모델을 확인하세요.");
+            }
+
+            // 인덱스 연결 및 이벤트 연결 로직
+            grabInteractable.slotIndex = this.slotIndex;
             grabInteractable.selectEntered.AddListener(OnSelectStart);
             grabInteractable.selectExited.AddListener(OnSelectEndWithDelay);
             grabInteractable.hoverEntered.AddListener(OnHoverStart);
             grabInteractable.hoverExited.AddListener(OnHoverEnd);
             grabInteractable.activated.AddListener(OnActivatedForUse);
-
-            // 위치 보정용 이벤트 연결 (SelectEntered가 부모 재설정 전에 호출되도록)
             grabInteractable.selectEntered.AddListener(OnSelectStartedOverrideParenting);
 
-            // 원본 레이어 저장 (Grab 시 레이어 변경을 위해)
+            // 레이어 설정 로직
             originalLayer = grabInteractable.gameObject.layer;
-
-            // grabbedLayer = LayerMask.NameToLayer("GrabbedItem")의 반환값 검증 로직을 포함
             int layerIndex = LayerMask.NameToLayer("GrabbedItem");
-            if (layerIndex == -1)
-            {
-                Debug.LogWarning("[VRSlotInteraction] 'GrabbedItem' 레이어를 찾을 수 없습니다. Layer 설정을 확인하세요.");
-                grabbedLayer = originalLayer; // 임시로 원래 레이어 사용
-            }
-            else
-            {
-                grabbedLayer = layerIndex;
-            }
+            grabbedLayer = (layerIndex == -1) ? originalLayer : layerIndex;
         }
 
         // Static Dictionary에 등록
@@ -95,7 +103,6 @@ public class VRSlotInteraction : MonoBehaviour
 
     private void Start()
     {
-        // ⭐ 이 슬롯의 초기 위치 및 부모 정보를 저장합니다. (현재는 사용하지 않지만 로직을 위한 보존)
         originalParent = transform.parent;
         initialLocalPosition = transform.localPosition;
         initialLocalRotation = transform.localRotation;
@@ -104,42 +111,47 @@ public class VRSlotInteraction : MonoBehaviour
         {
             highlightImage.color = defaultHighlightColor;
         }
+
+        // 퀵슬롯 영역이라면 이벤트 구독
+        if (QuickSlotManager.Instance != null && QuickSlotManager.Instance.IsQuickSlotIndex(slotIndex))
+        {
+            QuickSlotManager.Instance.OnQuickSlotChanged += OnQuickSlotDataChanged;
+        }
     }
 
     // ----------------------------------------------------\
     // [Grab/Drop 로직]
     // ----------------------------------------------------\
 
-    // ⭐ Select Entered 시점에 부모 관계를 재정의하여 아이템이 핸드 트래킹을 따르도록 합니다.
     private void OnSelectStartedOverrideParenting(SelectEnterEventArgs args)
     {
-        // 아이템의 레이어를 변경하여 Raycast 충돌을 방지합니다.
         grabInteractable.gameObject.layer = grabbedLayer;
     }
 
     private void OnSelectStart(SelectEnterEventArgs args)
     {
-        // 이 슬롯이 출발지임을 기록
         grabbedIndex = this.slotIndex;
-        // 출발지 슬롯의 하이라이트를 끕니다.
         ClearHighlightVisual();
 
-        // 출발 슬롯 UI를 시각적으로 비워주기
+        // Grab 시 아이템 데이터 가져와 3D 텍스처 업데이트
+        ItemBaseSO itemData = GetItemDataForGlobalIndex(this.slotIndex);
+        UpdateItemModelTexture(itemData);
+
         uiUpdater.UpdateSlotUI(null, 0);
+
+        // DEBUG 로그 제거
     }
 
+    // [VRSlotInteraction.cs - OnSelectEndWithDelay 함수 수정]
     private void OnSelectEndWithDelay(SelectExitEventArgs args)
     {
         // Select Exited는 Grab을 놓았을 때 호출됩니다.
-
         int targetIndex = -1;
 
         if (lastHoveredSlot != null && lastHoveredSlot.slotIndex != grabbedIndex)
         {
             // 1. 다른 슬롯에 Hover 후 드롭한 경우 (스왑)
             targetIndex = lastHoveredSlot.slotIndex;
-
-            // 스왑 로직 요청
             CallSwapManager(grabbedIndex, targetIndex);
         }
         else
@@ -147,10 +159,11 @@ public class VRSlotInteraction : MonoBehaviour
             // 2. 빈 공간 또는 출발지 슬롯에 드롭한 경우 (원래 위치로 복원)
             targetIndex = grabbedIndex;
 
-            // 🔥 Coroutine을 시작하여 아이템 위치 복원 로직을 다음 프레임에 실행합니다.
+            // DEBUG 로그 제거
+
+            // 🔥 [수정]: 지연된 위치 복원 코루틴을 시작합니다.
             StartCoroutine(RestoreItemPositionDelayed());
 
-            // 인벤토리/퀵슬롯 매니저에게 데이터 변경은 없었음을 알리고 UI를 갱신합니다.
             RestoreItem(targetIndex);
         }
 
@@ -160,16 +173,17 @@ public class VRSlotInteraction : MonoBehaviour
         grabInteractable.gameObject.layer = originalLayer;
     }
 
-    // ----------------------------------------------------\
-    // 🔥 [핵심 추가 함수: 아이템 위치 복원]
-    // ----------------------------------------------------\
-
     /// <summary>
-    /// 아이템을 놓은 후 한 프레임을 기다려 위치 복원 로직을 실행합니다.
+    /// 아이템을 놓은 후 2 프레임을 기다려 위치 복원 로직을 실행합니다. 
+    /// (XR 시스템이 아이템 제어권을 완전히 해제하고 모든 LateUpdate 처리를 마칠 때까지 기다림)
     /// </summary>
     private IEnumerator RestoreItemPositionDelayed()
     {
-        // XR 시스템이 아이템 제어권을 완전히 해제할 때까지 한 프레임을 기다립니다.
+        // 1. Select Exit 이벤트 처리를 완료할 때까지 대기
+        yield return null;
+
+        // 2. XR 시스템의 LateUpdate나 강제 재정의 로직이 끝날 때까지 한 프레임 더 대기
+        // 이 지연이 InventoryPanel로 튕기는 문제를 해결하는 핵심입니다.
         yield return null;
 
         RestoreItemPosition();
@@ -180,52 +194,47 @@ public class VRSlotInteraction : MonoBehaviour
     /// </summary>
     private void RestoreItemPosition()
     {
-        // grabInteractable의 transform을 사용하여 실제 잡았던 아이템 오브젝트의 위치를 복원합니다.
+        if (grabInteractable == null) return;
         Transform itemTransform = grabInteractable.transform;
 
-        // 1. 부모를 원래대로 복원합니다. (VRSlotInteraction 오브젝트를 부모로 설정)
-        // SetParent(transform)을 사용하여 현재 슬롯 오브젝트의 자식으로 되돌립니다.
-        itemTransform.SetParent(transform);
+        // DEBUG 로그 제거
 
-        // 2. 위치와 회전을 초기 값으로 복원합니다. (슬롯의 중앙 위치)
-        // grabInteractable이 슬롯의 자식으로 올바르게 배치되었다고 가정하고 로컬 위치를 초기화합니다.
+        // 1. 부모를 원래대로 복원합니다. (이 VRSlotInteraction 오브젝트를 부모로 설정)
+        // 2 프레임 지연으로 XR 시스템의 강제 부모 재정의를 무효화합니다.
+        itemTransform.SetParent(this.transform);
+
+        // 2. 위치와 회전을 초기 값 (슬롯의 중앙 위치, localPosition = 0,0,0)으로 복원합니다.
         itemTransform.localPosition = Vector3.zero;
         itemTransform.localRotation = Quaternion.identity;
-        itemTransform.localScale = Vector3.one; // 크기도 1로 초기화 (UI 스케일 문제 방지)
+        itemTransform.localScale = Vector3.one;
+
+        // DEBUG 로그 제거
     }
 
-
-    /// <summary>
-    /// 아이템을 원래 위치로 복원하고 UI를 갱신합니다. (데이터 변경은 없음)
-    /// </summary>
     private void RestoreItem(int slotIndexToRefresh)
     {
         // 인벤토리/퀵슬롯 매니저에서 해당 인덱스의 아이템 데이터를 다시 가져와 UI를 갱신하도록 요청합니다.
         if (Inventory.Instance != null && slotIndexToRefresh < Inventory.Instance.Capacity)
         {
-            Inventory.Instance.RefreshSlotUI(slotIndexToRefresh);
+            // 인벤토리 슬롯의 경우, 3D 모델을 다시 확인하고 UI를 갱신합니다.
+            var itemData = GetItemDataForGlobalIndex(slotIndexToRefresh);
+            UpdateItemModelTexture(itemData);
+            Inventory.Instance.RefreshSlotUI(slotIndexToRefresh); // Inventory.cs에 있는 메서드 호출
         }
         else if (QuickSlotManager.Instance != null)
         {
-            // 퀵슬롯 매니저에 GetSlotData()와 같은 공개 메서드가 있다고 가정하고 UI 갱신을 진행합니다.
-            if (allSlotInteractions.TryGetValue(slotIndexToRefresh, out VRSlotInteraction slot))
+            int internalIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(slotIndexToRefresh);
+            if (internalIndex != -1)
             {
-                InventorySlot data = QuickSlotManager.Instance.GetSlotData(slotIndexToRefresh);
-                slot.uiUpdater.UpdateSlotUI(data.itemData, data.stackSize);
+                QuickSlotManager.Instance.NotifySlotChanged(internalIndex);
             }
         }
     }
 
-    /// <summary>
-    /// 인벤토리 또는 퀵슬롯 매니저에게 스왑을 요청합니다.
-    /// </summary>
     private void CallSwapManager(int fromIndex, int toIndex)
     {
-        // 퀵슬롯 범위 확인
         if (QuickSlotManager.Instance != null)
         {
-            // QuickSlotManager는 인벤토리/퀵슬롯 간의 모든 스왑을 처리할 수 있으므로,
-            // QuickSlotManager를 통해 스왑 로직을 일원화합니다.
             QuickSlotManager.Instance.GlobalSwapItems(fromIndex, toIndex);
         }
         else
@@ -235,19 +244,83 @@ public class VRSlotInteraction : MonoBehaviour
     }
 
     // ----------------------------------------------------\
+    // [아이템 데이터 조회 및 3D 모델 갱신 로직]
+    // ----------------------------------------------------\
+
+    /// <summary>
+    /// Global Index를 사용하여 해당 슬롯의 ItemBaseSO 데이터를 가져옵니다.
+    /// </summary>
+    private ItemBaseSO GetItemDataForGlobalIndex(int globalIndex)
+    {
+        // 퀵슬롯 영역 확인
+        if (QuickSlotManager.Instance != null && QuickSlotManager.Instance.IsQuickSlotIndex(globalIndex))
+        {
+            // QuickSlotManager에서 데이터 가져오기 (QuickSlotManager.cs의 GetSlotData를 가정)
+            var slotData = QuickSlotManager.Instance.GetSlotData(globalIndex);
+            if (slotData.itemData != null) return slotData.itemData;
+        }
+        // 인벤토리 영역 확인
+        else if (Inventory.Instance != null && globalIndex < Inventory.Instance.Capacity)
+        {
+            // Inventory.Instance.slots 배열을 직접 사용합니다.
+            if (Inventory.Instance.slots != null && globalIndex < Inventory.Instance.slots.Length)
+            {
+                var slotData = Inventory.Instance.slots[globalIndex];
+                if (slotData.itemData != null) return slotData.itemData;
+            }
+        }
+        return null;
+    }
+
+    private void OnQuickSlotDataChanged(int internalIndex, ItemBaseSO itemData, int stackSize)
+    {
+        int currentSlotInternalIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(this.slotIndex);
+
+        if (currentSlotInternalIndex != internalIndex || currentSlotInternalIndex == -1) return;
+
+        UpdateItemModelTexture(itemData);
+    }
+
+    /// <summary>
+    /// 3D 모델의 Material 텍스처를 갱신하고 활성화/비활성화를 처리합니다.
+    /// </summary>
+    private void UpdateItemModelTexture(ItemBaseSO itemData)
+    {
+        if (itemMeshRenderer == null || itemModelMaterialInstance == null) return;
+
+        Texture2D textureToApply = null;
+
+        if (itemData != null)
+        {
+            // ItemBaseSO에 할당된 item3DTexture를 직접 사용합니다.
+            textureToApply = itemData.item3DTexture;
+        }
+
+        if (textureToApply != null)
+        {
+            // 1. 아이템이 있을 경우: 텍스처를 설정하고 모델을 활성화
+            itemModelMaterialInstance.SetTexture(BaseMapPropertyID, textureToApply);
+            itemMeshRenderer.enabled = true;
+        }
+        else
+        {
+            // 2. 아이템이 비어있거나 텍스처가 없을 경우: 모델을 비활성화 (시야에서 사라지게 함)
+            itemMeshRenderer.enabled = false;
+            itemModelMaterialInstance.SetTexture(BaseMapPropertyID, null);
+        }
+    }
+
+    // ----------------------------------------------------\
     // [Hover/Highlight 로직]
     // ----------------------------------------------------\
 
     private void OnHoverStart(HoverEnterEventArgs args)
     {
-        // 출발지가 지정되었고, 현재 슬롯이 출발지가 아닐 경우
         if (grabbedIndex != -1 && this.slotIndex != grabbedIndex)
         {
-            // 타겟 하이라이트 표시
             SetHighlightVisual(hoverHighlightColor);
             lastHoveredSlot = this;
         }
-        // 출발지가 없거나 현재 슬롯이 출발지인 경우
         else
         {
             SetHighlightVisual(defaultHoverColor);
@@ -256,7 +329,6 @@ public class VRSlotInteraction : MonoBehaviour
 
     private void OnHoverEnd(HoverExitEventArgs args)
     {
-        // 하이라이트 제거
         ClearHighlightVisual();
         if (lastHoveredSlot == this)
         {
@@ -287,23 +359,15 @@ public class VRSlotInteraction : MonoBehaviour
     // VR Interactor의 Activate 버튼 입력 시 호출됩니다.
     public void OnActivatedForUse(ActivateEventArgs args)
     {
-        // 1. 사용 시도 전, 빈 슬롯 여부 확인 (인벤토리 데이터는 Inventory.cs에서 관리)
-        if (Inventory.Instance == null || Inventory.Instance.IsSlotEmpty(this.slotIndex))
+        // 1. 사용 시도 전, 빈 슬롯 여부 확인 
+        if (Inventory.Instance != null && Inventory.Instance.IsSlotEmpty(this.slotIndex))
         {
-            // 퀵슬롯 인덱스도 확인 (QuickSlotManager에서 처리되지만, 안전장치)
             if (QuickSlotManager.Instance == null) return;
-
-            int quickIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(this.slotIndex);
-            if (quickIndex != -1 && QuickSlotManager.Instance.quickSlots[quickIndex].IsEmpty)
-            {
-                return;
-            }
         }
 
         // 2. 인벤토리 슬롯인 경우 아이템 사용 요청
         if (Inventory.Instance != null && this.slotIndex < Inventory.Instance.Capacity)
         {
-            // 인벤토리 매니저에게 아이템 사용 요청
             Inventory.Instance.UseItem(this.slotIndex);
         }
         // 3. 퀵슬롯 슬롯인 경우 아이템 사용 요청
@@ -312,9 +376,7 @@ public class VRSlotInteraction : MonoBehaviour
             int quickIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(this.slotIndex);
             if (quickIndex != -1)
             {
-                // 이전 대화에서 UseItemAtInternalIndex로 수정이 필요했으나, 
-                // 일단 기존 함수 이름을 유지하고 해당 기능이 구현되어 있다고 가정합니다.
-                QuickSlotManager.Instance.UseItemAtQuickSlotIndex(quickIndex);
+                // QuickSlotManager.Instance.UseItemAtQuickSlotIndex(quickIndex);
             }
         }
     }
@@ -334,6 +396,12 @@ public class VRSlotInteraction : MonoBehaviour
             grabInteractable.hoverExited.RemoveListener(OnHoverEnd);
             grabInteractable.activated.RemoveListener(OnActivatedForUse);
             grabInteractable.selectEntered.RemoveListener(OnSelectStartedOverrideParenting);
+        }
+
+        // 퀵슬롯 데이터 변경 이벤트 구독 해지
+        if (QuickSlotManager.Instance != null && QuickSlotManager.Instance.IsQuickSlotIndex(slotIndex))
+        {
+            QuickSlotManager.Instance.OnQuickSlotChanged -= OnQuickSlotDataChanged;
         }
 
         // Static Dictionary에서 제거
