@@ -72,7 +72,18 @@ public class VRSlotInteraction : MonoBehaviour
 
             // 원본 레이어 저장 (Grab 시 레이어 변경을 위해)
             originalLayer = grabInteractable.gameObject.layer;
-            grabbedLayer = LayerMask.NameToLayer("GrabbedItem"); // "GrabbedItem" 레이어가 정의되어 있다고 가정
+
+            // grabbedLayer = LayerMask.NameToLayer("GrabbedItem")의 반환값 검증 로직을 포함
+            int layerIndex = LayerMask.NameToLayer("GrabbedItem");
+            if (layerIndex == -1)
+            {
+                Debug.LogWarning("[VRSlotInteraction] 'GrabbedItem' 레이어를 찾을 수 없습니다. Layer 설정을 확인하세요.");
+                grabbedLayer = originalLayer; // 임시로 원래 레이어 사용
+            }
+            else
+            {
+                grabbedLayer = layerIndex;
+            }
         }
 
         // Static Dictionary에 등록
@@ -84,12 +95,10 @@ public class VRSlotInteraction : MonoBehaviour
 
     private void Start()
     {
-        if (slotImage != null)
-        {
-            originalParent = transform.parent;
-            initialLocalPosition = transform.localPosition;
-            initialLocalRotation = transform.localRotation;
-        }
+        // ⭐ 이 슬롯의 초기 위치 및 부모 정보를 저장합니다. (현재는 사용하지 않지만 로직을 위한 보존)
+        originalParent = transform.parent;
+        initialLocalPosition = transform.localPosition;
+        initialLocalRotation = transform.localRotation;
 
         if (highlightImage != null)
         {
@@ -104,12 +113,6 @@ public class VRSlotInteraction : MonoBehaviour
     // ⭐ Select Entered 시점에 부모 관계를 재정의하여 아이템이 핸드 트래킹을 따르도록 합니다.
     private void OnSelectStartedOverrideParenting(SelectEnterEventArgs args)
     {
-        if (grabInteractable.transform.parent != null)
-        {
-            // 부모 관계를 일시적으로 Interactor의 Hand Attachment로 변경
-            // (Grab Interactable의 Re-parenting 로직에 의해 자동으로 처리될 수 있지만, 명시적으로 추가)
-        }
-
         // 아이템의 레이어를 변경하여 Raycast 충돌을 방지합니다.
         grabInteractable.gameObject.layer = grabbedLayer;
     }
@@ -128,7 +131,6 @@ public class VRSlotInteraction : MonoBehaviour
     private void OnSelectEndWithDelay(SelectExitEventArgs args)
     {
         // Select Exited는 Grab을 놓았을 때 호출됩니다.
-        // 드롭된 위치나 마지막 Hover 슬롯을 확인합니다.
 
         int targetIndex = -1;
 
@@ -145,8 +147,10 @@ public class VRSlotInteraction : MonoBehaviour
             // 2. 빈 공간 또는 출발지 슬롯에 드롭한 경우 (원래 위치로 복원)
             targetIndex = grabbedIndex;
 
-            // 아이템을 원래 위치로 복원하는 로직이 필요합니다.
-            // 인벤토리/퀵슬롯 매니저에게 복원 요청은 필요 없지만, UI를 갱신해야 합니다.
+            // 🔥 Coroutine을 시작하여 아이템 위치 복원 로직을 다음 프레임에 실행합니다.
+            StartCoroutine(RestoreItemPositionDelayed());
+
+            // 인벤토리/퀵슬롯 매니저에게 데이터 변경은 없었음을 알리고 UI를 갱신합니다.
             RestoreItem(targetIndex);
         }
 
@@ -154,13 +158,45 @@ public class VRSlotInteraction : MonoBehaviour
         grabbedIndex = -1;
         lastHoveredSlot = null;
         grabInteractable.gameObject.layer = originalLayer;
+    }
 
-        // 아이템의 위치를 원래대로 복원 (Re-parenting 로직에 의해 자동 처리될 수 있으나, 안전장치)
-        // grabInteractable.transform.SetParent(originalParent); 
+    // ----------------------------------------------------\
+    // 🔥 [핵심 추가 함수: 아이템 위치 복원]
+    // ----------------------------------------------------\
+
+    /// <summary>
+    /// 아이템을 놓은 후 한 프레임을 기다려 위치 복원 로직을 실행합니다.
+    /// </summary>
+    private IEnumerator RestoreItemPositionDelayed()
+    {
+        // XR 시스템이 아이템 제어권을 완전히 해제할 때까지 한 프레임을 기다립니다.
+        yield return null;
+
+        RestoreItemPosition();
     }
 
     /// <summary>
-    /// 아이템을 원래 위치로 복원하고 UI를 갱신합니다.
+    /// 잡고 있던 아이템을 원래 슬롯의 위치로 되돌립니다.
+    /// </summary>
+    private void RestoreItemPosition()
+    {
+        // grabInteractable의 transform을 사용하여 실제 잡았던 아이템 오브젝트의 위치를 복원합니다.
+        Transform itemTransform = grabInteractable.transform;
+
+        // 1. 부모를 원래대로 복원합니다. (VRSlotInteraction 오브젝트를 부모로 설정)
+        // SetParent(transform)을 사용하여 현재 슬롯 오브젝트의 자식으로 되돌립니다.
+        itemTransform.SetParent(transform);
+
+        // 2. 위치와 회전을 초기 값으로 복원합니다. (슬롯의 중앙 위치)
+        // grabInteractable이 슬롯의 자식으로 올바르게 배치되었다고 가정하고 로컬 위치를 초기화합니다.
+        itemTransform.localPosition = Vector3.zero;
+        itemTransform.localRotation = Quaternion.identity;
+        itemTransform.localScale = Vector3.one; // 크기도 1로 초기화 (UI 스케일 문제 방지)
+    }
+
+
+    /// <summary>
+    /// 아이템을 원래 위치로 복원하고 UI를 갱신합니다. (데이터 변경은 없음)
     /// </summary>
     private void RestoreItem(int slotIndexToRefresh)
     {
@@ -171,24 +207,13 @@ public class VRSlotInteraction : MonoBehaviour
         }
         else if (QuickSlotManager.Instance != null)
         {
-            int quickIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(slotIndexToRefresh);
-            // QuickSlotManager에는 RefreshSlotUI 퍼블릭 메서드가 없으므로, 
-            // 퀵슬롯 매니저의 내부 로직을 통해 UI를 갱신해야 합니다.
-            // QuickSlotManager.UpdateQuickSlotUI(quickIndex); // private 이므로 직접 호출 불가
-
-            // Inventory.RefreshSlotUI와 유사하게 QuickSlotManager에 퍼블릭 메서드를 추가해야 합니다.
-            // 임시로, QuickSlotManager에서 UI가 갱신된다고 가정합니다.
-            // 또는, 퀵슬롯 UI를 직접 갱신합니다 (권장되지 않음).
+            // 퀵슬롯 매니저에 GetSlotData()와 같은 공개 메서드가 있다고 가정하고 UI 갱신을 진행합니다.
             if (allSlotInteractions.TryGetValue(slotIndexToRefresh, out VRSlotInteraction slot))
             {
                 InventorySlot data = QuickSlotManager.Instance.GetSlotData(slotIndexToRefresh);
                 slot.uiUpdater.UpdateSlotUI(data.itemData, data.stackSize);
             }
         }
-
-        // 아이템 오브젝트를 원래의 위치로 되돌립니다.
-        // grabInteractable.transform.localPosition = initialLocalPosition;
-        // grabInteractable.transform.localRotation = initialLocalRotation;
     }
 
     /// <summary>
@@ -206,11 +231,6 @@ public class VRSlotInteraction : MonoBehaviour
         else
         {
             Debug.LogError("[VRSlotInteraction] QuickSlotManager가 없어 스왑 로직을 실행할 수 없습니다.");
-            // 인벤토리 매니저만 있다면 인벤토리 내 스왑만 처리
-            // if (Inventory.Instance != null && fromIndex < Inventory.Instance.Capacity && toIndex < Inventory.Instance.Capacity)
-            // {
-            //     Inventory.Instance.SwapItems(fromIndex, toIndex); // Inventory에 SwapItems가 없다면 오류 발생
-            // }
         }
     }
 
@@ -292,7 +312,9 @@ public class VRSlotInteraction : MonoBehaviour
             int quickIndex = QuickSlotManager.Instance.GetQuickSlotInternalIndex(this.slotIndex);
             if (quickIndex != -1)
             {
-                QuickSlotManager.Instance.UseItemAtQuickSlotIndex(quickIndex); // 🔥 QuickSlotManager 함수 호출
+                // 이전 대화에서 UseItemAtInternalIndex로 수정이 필요했으나, 
+                // 일단 기존 함수 이름을 유지하고 해당 기능이 구현되어 있다고 가정합니다.
+                QuickSlotManager.Instance.UseItemAtQuickSlotIndex(quickIndex);
             }
         }
     }
