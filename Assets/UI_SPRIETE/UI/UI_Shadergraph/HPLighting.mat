@@ -110,7 +110,7 @@ Material:
     - _EdgeWidthFloat: 0.001
     - _EmissionStrength: 149
     - _EnvironmentReflections: 1
-    - _FillAmount: 0.1
+    - _FillAmount: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
