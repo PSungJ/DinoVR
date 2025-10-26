@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 using System.Linq;
 using System;
+using System.Collections.Generic; // Dictionary 사용을 위해 추가될 수 있음
 
-// InventorySlot, ItemBaseSO 등 외부 정의는 생략합니다.
+// InventorySlot, ItemBaseSO, EquippableItemSO, ConsumableItemSO, ItemType 등 외부 정의는 생략합니다.
+// PlayerHealthComponent, SlotUIUpdater 등 외부 정의는 생략합니다.
 
 public class Inventory : MonoBehaviour
 {
@@ -12,7 +14,7 @@ public class Inventory : MonoBehaviour
     [Header("Dependencies")]
     [SerializeField] private int capacity = 30;
 
-    // ⭐ [FIX: 외부에서 capacity를 읽을 수 있도록 public Capacity 속성 추가]
+    // 인벤토리 인덱스 범위: 0 ~ 29 (총 30개)
     public int Capacity => capacity;
 
     [SerializeField] private EquipmentManager equipmentManager;
@@ -47,7 +49,6 @@ public class Inventory : MonoBehaviour
         slots = new InventorySlot[capacity];
         for (int i = 0; i < capacity; i++)
         {
-            // 🔥 초기 아이템 로딩 문제 해결: 슬롯을 Empty 상태로 초기화합니다.
             slots[i] = InventorySlot.Empty;
         }
     }
@@ -70,7 +71,7 @@ public class Inventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 🔥 특정 인덱스의 슬롯에 아이템이 없는지 확인합니다. 퀵슬롯 인덱스도 처리합니다.
+    /// 특정 인덱스의 슬롯에 아이템이 없는지 확인합니다. 모든 슬롯 인덱스를 처리합니다.
     /// </summary>
     public bool IsSlotEmpty(int index)
     {
@@ -80,22 +81,19 @@ public class Inventory : MonoBehaviour
             return slots[index].IsEmpty;
         }
 
-        // 2. 퀵슬롯 범위 체크 및 처리
+        // 2. 퀵슬롯 범위 체크 및 처리 (30 ~ 32)
         if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(index))
         {
-            // QuickSlotManager.IsQuickSlotEmpty를 호출하여 실제 퀵슬롯 데이터 확인
             return quickSlotManager.IsQuickSlotEmpty(index);
         }
 
-        // 2-1. 장비슬롯 범위 채크 및 처리.
+        // 3. 장비슬롯 범위 채크 및 처리 (33 ~ 34)
         if (equipmentManager != null && equipmentManager.IsEquipmentSlotIndex(index))
         {
-            // QuickSlotManager.IsQuickSlotEmpty를 호출하여 실제 장비슬롯 데이터 확인
             return equipmentManager.IsEquipmentSlotEmpty(index);
         }
 
-
-        // 3. 범위를 벗어난 인덱스인 경우
+        // 4. 범위를 벗어난 인덱스인 경우
         return true;
     }
 
@@ -108,12 +106,10 @@ public class Inventory : MonoBehaviour
         {
             if (inventorySlotUIs == null || i >= inventorySlotUIs.Length || inventorySlotUIs[i] == null)
             {
-                // UI 연결 오류는 LogError 대신 LogWarning으로 대체하여 런타임 중단을 방지
                 Debug.LogWarning($"UI 연결 오류: Inventory Slot UIs 배열의 Element {i}가 연결되지 않았습니다. Inspector를 확인하세요.");
                 continue;
             }
 
-            // struct의 itemData와 stackSize 필드에 직접 접근
             inventorySlotUIs[i].UpdateSlotUI(slots[i].itemData, slots[i].stackSize);
         }
     }
@@ -136,7 +132,6 @@ public class Inventory : MonoBehaviour
             {
                 if (slots[i].itemData == itemToAdd && slots[i].stackSize < itemToAdd.maxStackSize)
                 {
-                    // struct의 복사본을 수정하는 대신, 직접 배열 요소에 접근하여 변경 (struct가 public 필드이므로 가능)
                     slots[i].stackSize += amount;
                     slots[i].stackSize = Mathf.Min(slots[i].stackSize, itemToAdd.maxStackSize);
 
@@ -152,7 +147,6 @@ public class Inventory : MonoBehaviour
         {
             if (slots[i].IsEmpty)
             {
-                // 🔥 초기 아이템 로딩 문제 해결: 새로운 아이템 슬롯을 할당합니다.
                 slots[i] = new InventorySlot(itemToAdd, amount);
 
                 Debug.Log($"[Inventory] Item Added to Slot {i}: {itemToAdd.itemName}, Amount: {amount}");
@@ -167,11 +161,8 @@ public class Inventory : MonoBehaviour
 
     public void RemoveItem(int slotIndex, int amount)
     {
-        // 퀵슬롯 인덱스를 여기서 처리하지 않고, 순수 인벤토리 인덱스만 처리합니다.
-        // 퀵슬롯 아이템 제거는 QuickSlotManager가 담당해야 합니다.
         if (slotIndex >= 0 && slotIndex < capacity && !slots[slotIndex].IsEmpty)
         {
-            // struct의 복사본을 수정하는 대신, 직접 배열 요소에 접근하여 변경 (struct가 public 필드이므로 가능)
             slots[slotIndex].stackSize -= amount;
             if (slots[slotIndex].stackSize <= 0)
             {
@@ -200,16 +191,14 @@ public class Inventory : MonoBehaviour
 
     public bool UseItem(int slotIndex)
     {
-        // ⭐ [퀵슬롯 위임 로직] 인덱스가 퀵슬롯 범위에 속하는지 확인하고 위임합니다.
-        // QuickSlotManager는 HandleQuickSlotUse 내부에서 Inventory.UseItem을 다시 호출하면 안 됩니다.
+        // 1. 퀵슬롯 위임 로직
         if (quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(slotIndex))
         {
             Debug.Log($"[Inventory] UseItem Delegated to QuickSlotManager for index: {slotIndex}");
-            // 이 호출은 HandleQuickSlotUse가 UseItem을 재귀적으로 호출하지 않도록 QuickSlotManager가 수정되어야 합니다.
             return quickSlotManager.HandleQuickSlotUse(slotIndex);
         }
 
-        // [메인 인벤토리 로직] 인덱스가 메인 인벤토리 범위 내에 있는지, 비어있지 않은지 확인합니다.
+        // 2. 메인 인벤토리 로직
         if (slotIndex < 0 || slotIndex >= capacity || slots[slotIndex].IsEmpty)
         {
             Debug.LogWarning($"[Inventory] UseItem failed: Index {slotIndex} is outside main inventory bounds or is empty.");
@@ -220,7 +209,6 @@ public class Inventory : MonoBehaviour
 
         if (item is EquippableItemSO equipItem)
         {
-            // EquippableItemSO와 EquipmentItemSO의 상속 관계를 가정하고 처리
             return TryEquipItem(slotIndex, equipItem);
         }
         else if (item.itemType == ItemType.Consumable)
@@ -245,42 +233,52 @@ public class Inventory : MonoBehaviour
 
     /// <summary>
     /// 두 인벤토리 슬롯의 아이템 위치를 서로 교환합니다.
-    /// QuickSlotManager가 연결되어 있으면 QuickSlot과의 교환도 처리합니다.
+    /// QuickSlotManager 또는 EquipmentManager가 연결되어 있으면 교환을 위임합니다.
     /// </summary>
     public void SwapSlots(int indexA, int indexB)
     {
         if (indexA == indexB) return;
 
-        // 1. QuickSlotManager 연동 확인 (가장 먼저 수행)
-        bool isAQuickSlot = false;
-        bool isBQuickSlot = false;
+        // 1. 위임 가능성 확인
+        bool isAQuickSlot = quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(indexA);
+        bool isBQuickSlot = quickSlotManager != null && quickSlotManager.IsQuickSlotIndex(indexB);
+        bool isAEquipmentSlot = equipmentManager != null && equipmentManager.IsEquipmentSlotIndex(indexA);
+        bool isBEquipmentSlot = equipmentManager != null && equipmentManager.IsEquipmentSlotIndex(indexB);
 
-        if (quickSlotManager != null)
-        {
-            isAQuickSlot = quickSlotManager.IsQuickSlotIndex(indexA);
-            isBQuickSlot = quickSlotManager.IsQuickSlotIndex(indexB);
-        }
+        // 2. 위임 처리
 
+        // 2-A. 퀵슬롯이 관련되어 있다면 QuickSlotManager에 위임
         if (isAQuickSlot || isBQuickSlot)
         {
-            // 하나 이상의 슬롯이 퀵슬롯에 속하는 경우, QuickSlotManager에 처리를 위임
             if (quickSlotManager != null)
             {
                 quickSlotManager.HandleInventorySwap(indexA, indexB);
                 Debug.Log($"[Inventory] Swap Delegated to QuickSlotManager: Indices ({indexA}, {indexB})");
-                return; // 퀵슬롯 매니저가 처리했으므로 종료
+                return;
             }
         }
 
-        // 2. 순수 인벤토리 슬롯 간의 교환 (위임 실패 또는 퀵슬롯이 아닌 경우)
-        // 유효성 검사를 이 시점에 다시 수행합니다. (순수 인벤토리 범위 내인지 확인)
+        // 2-B. 퀵슬롯이 아니며, 장비 슬롯이 관련되어 있다면 장비 슬롯 처리 로직으로 이동
+        if (isAEquipmentSlot || isBEquipmentSlot)
+        {
+            if (equipmentManager != null)
+            {
+                // 장비 슬롯과의 스왑 로직 수행
+                HandleEquipmentSlotSwap(indexA, indexB, isAEquipmentSlot, isBEquipmentSlot);
+                Debug.Log($"[Inventory] Swap Handled by Equipment Logic: Indices ({indexA}, {indexB})");
+                return;
+            }
+        }
+
+        // 3. 순수 인벤토리 슬롯 간의 교환 (위임 실패 또는 퀵/장비 슬롯이 아닌 경우)
         if (indexA < 0 || indexA >= capacity || indexB < 0 || indexB >= capacity)
         {
-            Debug.LogWarning($"[Inventory] SwapSlots Error: 유효하지 않은 순수 인벤토리 인덱스 ({indexA}, {indexB}). QuickSlotManager 연결/처리 오류.");
+            // 이 로직은 이제 순수 인벤토리 인덱스가 유효하지 않을 때만 실행됩니다.
+            Debug.LogWarning($"[Inventory] SwapSlots Error: 유효하지 않은 인덱스 ({indexA}, {indexB}). 위임 처리 실패.");
             return;
         }
 
-        // 3. 실제 스왑 실행
+        // 4. 실제 순수 인벤토리 스왑 실행
         InventorySlot temp = slots[indexA];
         slots[indexA] = slots[indexB];
         slots[indexB] = temp;
@@ -298,14 +296,12 @@ public class Inventory : MonoBehaviour
         // 1. 인벤토리 슬롯 비우기
         slots[slotIndex] = InventorySlot.Empty;
 
-        // 2. 장비 장착 요청 (EquipmentManager는 ItemBaseSO의 파생 클래스인 EquipmentItemSO를 기대함)
-        // 🚨 [FIX] EquipmentManager.Equip의 올바른 시그니처를 사용합니다.
+        // 2. 장비 장착 요청
         EquippableItemSO oldItem = equipmentManager.Equip(equipItem, slotIndex);
 
         if (oldItem != null)
         {
             // 3. 이전 장비 아이템을 다시 인벤토리의 해당 슬롯에 되돌려 놓습니다.
-            // EquipmentItemSO를 ItemBaseSO로 변환하여 InventorySlot에 저장합니다.
             slots[slotIndex] = new InventorySlot(oldItem, 1);
         }
 
@@ -315,7 +311,6 @@ public class Inventory : MonoBehaviour
 
     private bool ConsumeItem(int slotIndex)
     {
-        // 퀵슬롯의 소비 아이템은 QuickSlotManager에서 처리해야 합니다.
         if (slotIndex < 0 || slotIndex >= capacity || slots[slotIndex].IsEmpty) return false;
 
         ConsumableItemSO consumable = slots[slotIndex].itemData as ConsumableItemSO;
@@ -323,7 +318,6 @@ public class Inventory : MonoBehaviour
 
         Debug.Log($"[Inventory] Consuming {consumable.itemName} from slot {slotIndex}");
 
-        // 🚨 [FIX: 아이템 효과 적용 로직 추가]
         PlayerHealthComponent playerHealth = PlayerHealthComponent.Instance;
         EquipmentManager equipmentManager = EquipmentManager.Instance;
 
@@ -333,13 +327,75 @@ public class Inventory : MonoBehaviour
         }
         else
         {
-            // ConsumableItemSO.Use 함수를 호출하여 효과 적용
-            // ItemBaseSO.Use(slotIndex, playerHealth, equipmentManager) 메서드가 ConsumableItemSO에 정의되어 있어야 함
             consumable.Use(slotIndex, playerHealth, equipmentManager);
         }
 
-        // 4. 스택 감소 및 UI 갱신 (RemoveItem이 처리)
         RemoveItem(slotIndex, 1);
         return true;
+    }
+
+    // ----------------------------------------------------
+    // [장비 슬롯 처리 함수]
+    // ----------------------------------------------------
+
+    private void HandleEquipmentSlotSwap(int indexA, int indexB, bool isAEquipmentSlot, bool isBEquipmentSlot)
+    {
+        // 1. A와 B 모두 장비 슬롯인 경우 (장비 슬롯 간 스왑)
+        if (isAEquipmentSlot && isBEquipmentSlot)
+        {
+            EquippableItemSO itemA = equipmentManager.GetEquippedItemByIndex(indexA);
+            EquippableItemSO itemB = equipmentManager.GetEquippedItemByIndex(indexB);
+
+            // 서로 아이템 교환
+            equipmentManager.SwapEquippedItem(indexA, itemB);
+            equipmentManager.SwapEquippedItem(indexB, itemA);
+
+            return;
+        }
+
+        // 2. 인벤토리 슬롯 <-> 장비 슬롯 스왑 (A=Inventory, B=Equipment이거나 그 반대)
+        int inventoryIndex = isAEquipmentSlot ? indexB : indexA;
+        int equipmentIndex = isAEquipmentSlot ? indexA : indexB;
+
+        // 인벤토리 인덱스가 순수 인벤토리 범위 내인지 최종 확인
+        if (inventoryIndex < 0 || inventoryIndex >= capacity)
+        {
+            Debug.LogError($"[Inventory] 장비 스왑 오류: 인벤토리 인덱스 {inventoryIndex}가 범위를 벗어났습니다.");
+            return;
+        }
+
+        InventorySlot slotDataFromInventory = slots[inventoryIndex];
+        EquippableItemSO itemFromEquipment = equipmentManager.GetEquippedItemByIndex(equipmentIndex);
+
+        EquippableItemSO itemToEquip = slotDataFromInventory.itemData as EquippableItemSO;
+
+        if (itemToEquip != null)
+        {
+            // 3. 인벤토리 아이템을 장비 슬롯에 장착/교체 요청
+            EquippableItemSO oldItemFromEquipment = equipmentManager.SwapEquippedItem(equipmentIndex, itemToEquip);
+
+            // 4. 장비 슬롯에서 해제된 아이템을 인벤토리 슬롯에 넣기
+            slots[inventoryIndex] = oldItemFromEquipment != null ? new InventorySlot(oldItemFromEquipment, 1) : InventorySlot.Empty;
+        }
+        else if (slotDataFromInventory.IsEmpty)
+        {
+            // 인벤토리 슬롯이 비어있고, 장비 슬롯에 아이템이 있는 경우 (장비 해제 요청)
+            if (itemFromEquipment != null)
+            {
+                // 장비 슬롯 비우기 및 아이템 반환 (SwapEquippedItem에 null 전달)
+                EquippableItemSO unequippedItem = equipmentManager.SwapEquippedItem(equipmentIndex, null);
+
+                // 인벤토리 슬롯에 해제된 아이템 넣기
+                slots[inventoryIndex] = new InventorySlot(unequippedItem, 1);
+            }
+        }
+        // 인벤토리 아이템이 장비 불가능한 아이템인 경우 -> 스왑 불가.
+        else
+        {
+            Debug.LogWarning($"[Inventory] 장비 슬롯 스왑 실패: 인벤토리 아이템({slotDataFromInventory.itemData.itemName})은 장비 가능한 아이템이 아닙니다.");
+            return;
+        }
+
+        RefreshAllInventoryUI();
     }
 }
