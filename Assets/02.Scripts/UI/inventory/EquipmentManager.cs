@@ -6,11 +6,13 @@ using System;
 // 이 열거형은 EquippableItemSO에서도 참조됩니다.
 public enum EquipSlotType
 {
-    Weapon,
-    Helmet,
-    Armor,
-    Boots
+    None = 0, // Enum의 첫 번째 값은 0이어야 합니다.
+    Weapon = 1,
+    Armor = 2
+    // 다른 장비 슬롯도 여기에 추가 (예: Head, Body 등)
 }
+
+// [가정] InventorySlot 구조체와 EquippableItemSO 클래스는 별도의 파일에 정의되어 있습니다.
 
 /// <summary>
 /// 플레이어의 장비 아이템을 관리하고 관련 로직을 처리하는 클래스입니다.
@@ -24,13 +26,14 @@ public class EquipmentManager : MonoBehaviour
     [SerializeField] private QuickSlotManager quickSlotManager;
     [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs; // UI 갱신을 위해 UI 컴포넌트 참조
 
-    // 🔥 수정: SerializeField 제거. 코드로 초기화하고 외부에서 접근하지 않으므로 private 유지.
+    // 인벤토리 확장 슬롯 데이터를 저장하는 내부 배열 (UI 개수와 일치)
     private InventorySlot[] equipmentSlot;
 
-    [SerializeField] private int equipmentSlotStartIndex = 32;
-    [SerializeField] private int equipmentSlotEndIndex = 35; // UI 개수에 따라 32 + length - 1로 사용될 수 있음
+    // 인벤토리 확장 슬롯의 시작 인덱스
+    [SerializeField] private int equipmentSlotStartIndex = 33;
+    // 인벤토리 확장 슬롯의 끝 인덱스는 equipmentSlotStartIndex + equipmentSlot.Length - 1 입니다.
 
-    // 현재 장착된 아이템을 저장하는 딕셔너리
+    // 현재 장착된 아이템을 EquipSlotType을 키로 저장하는 딕셔너리
     private Dictionary<EquipSlotType, EquippableItemSO> equippedItems = new Dictionary<EquipSlotType, EquippableItemSO>();
 
     /// <summary>
@@ -50,18 +53,18 @@ public class EquipmentManager : MonoBehaviour
             return;
         }
 
-        // 초기화: 모든 슬롯을 null로 설정
+        // 1. equippedItems 딕셔너리 초기화 (None 제외)
         foreach (EquipSlotType slot in System.Enum.GetValues(typeof(EquipSlotType)))
         {
-            // 중복 추가를 피하기 위해 이미 존재하는지 확인합니다.
+            if (slot == EquipSlotType.None) continue; // None 타입은 장비 딕셔너리에 추가하지 않음
+
             if (!equippedItems.ContainsKey(slot))
             {
                 equippedItems.Add(slot, null);
             }
         }
 
-        // 🔥 [FIX] 1단계: equipmentSlot 배열 초기화
-        // equipmentSlotUIs의 길이와 일치하도록 InventorySlot 배열을 초기화합니다.
+        // 2. equipmentSlot 배열 초기화
         if (equipmentSlotUIs != null && equipmentSlotUIs.Length > 0)
         {
             equipmentSlot = new InventorySlot[equipmentSlotUIs.Length];
@@ -70,13 +73,10 @@ public class EquipmentManager : MonoBehaviour
                 // 모든 슬롯을 빈 상태로 초기화 (Empty InventorySlot 구조체 사용)
                 equipmentSlot[i] = InventorySlot.Empty;
             }
-            // 디버깅을 위해 endIndex를 UI 개수에 맞게 조정할 수 있습니다.
-            // equipmentSlotEndIndex = equipmentSlotStartIndex + equipmentSlotUIs.Length - 1; 
         }
         else
         {
             Debug.LogError("[EquipmentManager] equipmentSlotUIs 배열이 Inspector에 설정되지 않았습니다. 장비 슬롯을 초기화할 수 없습니다. VR 상호작용에 오류가 발생할 수 있습니다.");
-            // UI가 없더라도 배열 접근 오류를 피하기 위해 최소한의 배열을 설정합니다.
             equipmentSlot = new InventorySlot[0];
         }
     }
@@ -90,18 +90,19 @@ public class EquipmentManager : MonoBehaviour
     /// </summary>
     private EquipSlotType GetSlotTypeFromIndex(int index)
     {
-        // 장비 슬롯 배열의 시작 인덱스에 대한 내부 인덱스
+        // 장비 슬롯 배열의 시작 인덱스에 대한 내부 인덱스 (0, 1, 2...)
         int internalIndex = index - equipmentSlotStartIndex;
 
         if (internalIndex >= 0 && internalIndex < equipmentSlot.Length)
         {
-            // Enum 값을 int로 캐스팅하여 인덱스와 매핑
-            // UI 배열과 EquipSlotType 열거형의 순서가 일치한다고 가정합니다.
-            return (EquipSlotType)internalIndex;
+            // EquipSlotType의 정의에 따라 오프셋을 조정하여 반환합니다.
+            // internalIndex 0 -> EquipSlotType 1 (Weapon)
+            return (EquipSlotType)(internalIndex + 1);
         }
 
         throw new IndexOutOfRangeException($"[EquipmentManager] 인덱스 {index}는 유효한 장비 슬롯 범위({equipmentSlotStartIndex}~{equipmentSlotStartIndex + equipmentSlot.Length - 1})를 벗어났습니다.");
     }
+
 
     // ----------------------------------------------------
     // [장비 로직]
@@ -125,32 +126,35 @@ public class EquipmentManager : MonoBehaviour
         EquipSlotType targetSlot = itemToEquip.equipSlotType;
         EquippableItemSO oldItem = null;
 
-        // 1. 이미 장착된 아이템이 있는지 확인
+        // ⭐[FIX] 1. EquipSlotType이 None인 아이템은 장착 불가
+        if (targetSlot == EquipSlotType.None)
+        {
+            // 이 로그는 주로 Katana SO의 equipSlotType이 Weapon으로 설정되지 않았을 때 발생합니다.
+            Debug.LogError($"[EquipmentManager] 장착 실패: 아이템 '{itemToEquip.itemName}'의 equipSlotType이 None으로 설정되어 있습니다. 인스펙터를 확인하세요.");
+            return itemToEquip; // 거부된 아이템을 Inventory에게 반환하여 원래 슬롯으로 복귀시킵니다.
+        }
+
+        // 1. 이미 장착된 아이템이 있는지 확인 및 해제
         if (equippedItems.TryGetValue(targetSlot, out EquippableItemSO currentItem) && currentItem != null)
         {
             oldItem = currentItem;
-            // 2. 이미 아이템이 있다면, 현재 아이템을 해제
             equippedItems[targetSlot] = null;
-
-            // UI 슬롯의 InventorySlot 데이터도 업데이트
-            // 장비 슬롯의 InventorySlot은 항상 스택 1을 가집니다.
             UpdateEquipmentSlotData(targetSlot, InventorySlot.Empty);
-
-            Debug.Log($"[EquipmentManager] Unequipping {oldItem.itemName} from {targetSlot} before new equip. (Old item will be returned to inventory.)");
+            Debug.Log($"[EquipmentManager] Unequipping {oldItem.itemName} from {targetSlot} before new equip.");
         }
 
-        // 3. 새 아이템 장착
+        // 2. 새 아이템 장착
         equippedItems[targetSlot] = itemToEquip;
 
-        // UI 슬롯의 InventorySlot 데이터도 업데이트
+        // UI 슬롯의 InventorySlot 데이터도 업데이트 (stack: 1)
         UpdateEquipmentSlotData(targetSlot, new InventorySlot(itemToEquip, 1));
 
         Debug.Log($"[EquipmentManager] Successfully equipped {itemToEquip.itemName} into {targetSlot} slot.");
 
-        // 4. UI 갱신
+        // 3. UI 갱신
         UpdateEquipmentUI(targetSlot, itemToEquip);
 
-        // 5. QuickSlotManager 연동 (옵션)
+        // 4. QuickSlotManager 연동 (옵션)
 
         return oldItem; // 이전 아이템 반환 (Inventory.cs와의 호환성 유지)
     }
@@ -158,8 +162,6 @@ public class EquipmentManager : MonoBehaviour
     /// <summary>
     /// 특정 슬롯의 장비를 해제하는 로직입니다.
     /// </summary>
-    /// <param name="slotType">해제할 장착 위치</param>
-    /// <returns>해제된 아이템. 없으면 null.</returns>
     public EquippableItemSO Unequip(EquipSlotType slotType)
     {
         if (equippedItems.TryGetValue(slotType, out EquippableItemSO currentItem) && currentItem != null)
@@ -199,12 +201,21 @@ public class EquipmentManager : MonoBehaviour
             // 1. 기존 아이템 가져오기
             equippedItems.TryGetValue(slotType, out EquippableItemSO oldItem);
 
-            // 2. 새 아이템 타입 검사 및 장착 가능 여부 확인 (강제 스왑이 아니라면 여기에 타입 체크가 필요)
-            if (newItem != null && newItem.equipSlotType != slotType)
+            // 2. 새 아이템 타입 검사 및 장착 가능 여부 확인
+            if (newItem != null)
             {
-                // 장비 슬롯에 맞지 않는 아이템이 들어온 경우, oldItem을 반환하고 newItem을 그대로 유지 (스왑 취소 효과)
-                Debug.LogWarning($"[EquipmentManager] 타입 불일치. {slotType} 슬롯에 {newItem.equipSlotType} 아이템이 들어왔습니다. 스왑 취소.");
-                return oldItem;
+                // 장착하려는 아이템의 EquipSlotType이 현재 슬롯 타입과 일치하지 않는지 확인
+                if (newItem.equipSlotType != slotType)
+                {
+                    // 장비 슬롯에 맞지 않는 아이템이 들어온 경우, 스왑 취소.
+                    Debug.LogWarning($"[EquipmentManager] 타입 불일치. {slotType} 슬롯에 {newItem.equipSlotType} 아이템이 들어왔습니다. 스왑 취소. (인벤토리 복귀 아이템: {newItem.itemName})");
+
+                    // 장비 슬롯 UI 복구 (혹시 모를 UI 깜빡임을 방지)
+                    UpdateEquipmentUI(slotType, oldItem);
+
+                    // 거부된 아이템 (newItem)을 반환하여 인벤토리가 이를 원래 슬롯에 되돌려 놓도록 합니다.
+                    return newItem;
+                }
             }
 
             // 3. 새 아이템 장착 (null이면 해제)
@@ -219,12 +230,12 @@ public class EquipmentManager : MonoBehaviour
 
             Debug.Log($"[EquipmentManager] Swap successful at index {index}. Old: {(oldItem != null ? oldItem.itemName : "None")}, New: {(newItem != null ? newItem.itemName : "None")}");
 
-            return oldItem;
+            return oldItem; // 성공했으므로 장비 해제된 oldItem을 인벤토리로 보냅니다.
         }
         catch (IndexOutOfRangeException ex)
         {
             Debug.LogError(ex.Message);
-            return newItem;
+            return newItem; // 오류 발생 시 안전하게 newItem이라도 돌려보냅니다.
         }
     }
 
@@ -265,14 +276,12 @@ public class EquipmentManager : MonoBehaviour
 
         int internalIndex = index - equipmentSlotStartIndex;
 
-        // 🔥 [FIX] 2단계: equipmentSlot 배열의 길이로 경계를 확인하고 안전하게 접근
         if (equipmentSlot != null && internalIndex >= 0 && internalIndex < equipmentSlot.Length)
         {
             // equipmentSlot은 InventorySlot 구조체이므로 IsEmpty 속성 사용 가능
             return equipmentSlot[internalIndex].IsEmpty;
         }
 
-        // 초기화 오류 또는 유효하지 않은 인덱스인 경우
         return true;
     }
 
@@ -285,10 +294,23 @@ public class EquipmentManager : MonoBehaviour
     /// </summary>
     private void UpdateEquipmentSlotData(EquipSlotType slotType, InventorySlot slotData)
     {
-        int internalIndex = (int)slotType;
+        // ⭐[FIX] 2. None 타입은 인덱스 계산을 시도하지 않고 바로 리턴 (인덱스 -1 오류 방지)
+        if (slotType == EquipSlotType.None)
+        {
+            Debug.LogError("[EquipmentManager] InventorySlot 데이터 갱신 오류: EquipSlotType이 None입니다. 장착 가능한 타입이 아닙니다.");
+            return;
+        }
+
+        // EquipSlotType.Weapon (1) -> internalIndex 0
+        int internalIndex = (int)slotType - 1;
+
         if (equipmentSlot != null && internalIndex >= 0 && internalIndex < equipmentSlot.Length)
         {
             equipmentSlot[internalIndex] = slotData;
+        }
+        else
+        {
+            Debug.LogError($"[EquipmentManager] InventorySlot 데이터 갱신 오류: 유효하지 않은 내부 인덱스 {internalIndex} (SlotType: {slotType})");
         }
     }
 
