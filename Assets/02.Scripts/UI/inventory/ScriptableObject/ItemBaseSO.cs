@@ -3,13 +3,11 @@
 // ItemType enum이 ItemBaseSO의 itemType 필드에서 사용됩니다.
 public enum ItemType
 {
-    Default,
+    None,
     Consumable,
-    Equipment,
     Weapon,
-    Helmet,
     Armor,
-    Boots
+    Equipment
 }
 
 // NOTE: InventorySlot 구조체 정의를 이 파일에서 제거하여 '모호성 오류'를 해결했습니다.
