@@ -87,6 +87,14 @@ public class Inventory : MonoBehaviour
             return quickSlotManager.IsQuickSlotEmpty(index);
         }
 
+        // 2-1. 장비슬롯 범위 채크 및 처리.
+        if (equipmentManager != null && equipmentManager.IsEquipmentSlotIndex(index))
+        {
+            // QuickSlotManager.IsQuickSlotEmpty를 호출하여 실제 장비슬롯 데이터 확인
+            return equipmentManager.IsEquipmentSlotEmpty(index);
+        }
+
+
         // 3. 범위를 벗어난 인덱스인 경우
         return true;
     }

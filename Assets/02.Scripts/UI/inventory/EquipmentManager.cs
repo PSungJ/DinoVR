@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 // 장착 아이템이 들어갈 수 있는 슬롯의 종류를 정의합니다.
 // 이 열거형은 EquippableItemSO에서도 참조됩니다.
@@ -22,6 +23,10 @@ public class EquipmentManager : MonoBehaviour
     [Header("Dependencies")] // 기존 Canvas 필드 유지
     [SerializeField] private QuickSlotManager quickSlotManager;
     [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs; // UI 갱신을 위해 UI 컴포넌트 참조
+    [SerializeField] private InventorySlot[] equipmentSlot;
+    private int equipmentSlotStartIndex = 32;
+    private int equipmentSlotEndIndex = 33;
+
 
     // 현재 장착된 아이템을 저장하는 딕셔너리 (사용자 요청 반영)
     private Dictionary<EquipSlotType, EquippableItemSO> equippedItems = new Dictionary<EquipSlotType, EquippableItemSO>();
@@ -135,5 +140,25 @@ public class EquipmentManager : MonoBehaviour
                 break;
             }
         }
+    }
+
+    public bool IsEquipmentSlotIndex(int index)
+    {
+        return index >= equipmentSlotStartIndex && index < equipmentSlotStartIndex + equipmentSlotUIs.Length;
+    }
+
+    public bool IsEquipmentSlotEmpty(int index)
+    {
+        if (!IsEquipmentSlotIndex(index)) return true;
+
+        int internalIndex = index - equipmentSlotStartIndex;
+
+        if (internalIndex >= 0 && internalIndex < equipmentSlotUIs.Length)
+        {
+            // struct이므로 복사본에 접근하지만, IsEmpty는 안전합니다.
+            return equipmentSlot[internalIndex].IsEmpty;
+        }
+
+        return true;
     }
 }
