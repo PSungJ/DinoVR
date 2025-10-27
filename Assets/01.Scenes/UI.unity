@@ -7000,7 +7000,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 20, y: 0}
+  m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &556797319
 MonoBehaviour:
@@ -12478,7 +12478,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.3635826, g: 1, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -16444,7 +16444,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.3635826, g: 1, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -24689,6 +24689,7 @@ MonoBehaviour:
   - {fileID: 1642130288}
   - {fileID: 1729473830}
   inventoryReference: {fileID: 1660956725}
+  uiManagerRoot: {fileID: 1795361212}
   inventoryUIRoot: {fileID: 1858539432}
   quickSlotUIRoot: {fileID: 2083635284}
   equipmentSlotUIRoot: {fileID: 578636822}
@@ -29700,9 +29701,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   inventoryPanel: {fileID: 1858539432}
-  statusPanel: {fileID: 1832661074}
   toggleInventoryButton: VR_Menu_Inventory
-  toggleStatusButton: VR_Menu_Status
 --- !u!114 &1795361215
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77736,7 +77735,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.3635826, g: 1, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
