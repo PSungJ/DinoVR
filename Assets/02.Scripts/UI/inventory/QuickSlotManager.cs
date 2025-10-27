@@ -27,6 +27,7 @@ public class QuickSlotManager : MonoBehaviour
     // 실제 Inventory 컴포넌트를 연결해야 합니다. 🔥 Inspector에서 이 필드가 반드시 연결되어야 합니다.
     [SerializeField] private Inventory inventoryReference;
 
+    [SerializeField] private GameObject uiManagerRoot; // 🔥 UIManager 오브젝트 (인스펙터에서 할당)
     [SerializeField] private GameObject inventoryUIRoot;
     [SerializeField] private GameObject quickSlotUIRoot;
     [SerializeField] private GameObject equipmentSlotUIRoot;
@@ -122,24 +123,33 @@ public class QuickSlotManager : MonoBehaviour
         {
             bool currentState = inventoryUIRoot.activeSelf;
 
-            // 인벤토리 / 장비 UI 토글
+            // 🔹 인벤토리 / 장비 UI 토글
             inventoryUIRoot.SetActive(!currentState);
             if (equipmentSlotUIRoot != null)
                 equipmentSlotUIRoot.SetActive(!currentState);
 
-            // 🔥 퀵슬롯 빌보드 전환
+            // 🔹 퀵슬롯 빌보드 위치 전환
             if (quickSlotBillboard != null)
             {
                 if (!currentState)
-                    quickSlotBillboard.DetachFromPivot(); // 인벤토리 열릴 때 → 원래 위치/크기
+                    quickSlotBillboard.DetachFromPivot(); // 인벤토리 열릴 때
                 else
-                    quickSlotBillboard.AttachToPivot();    // 인벤토리 닫힐 때 → 손목 위치/크기
+                    quickSlotBillboard.AttachToPivot();    // 인벤토리 닫힐 때
+            }
+
+            // 🔹 UIManager를 메인 카메라 방향으로 회전시킴
+            if (!currentState && uiManagerRoot != null && Camera.main != null)
+            {
+                Transform cam = Camera.main.transform;
+                uiManagerRoot.transform.LookAt(
+                    uiManagerRoot.transform.position + cam.forward,
+                    Vector3.up
+                );
             }
 
             Debug.Log($"[QuickSlotManager] Inventory/QuickSlot/Equipment UI Toggled to: {!currentState}");
         }
     }
-
     /// <summary>
     /// 다음 퀵슬롯을 선택합니다.
     /// </summary>
