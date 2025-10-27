@@ -30,6 +30,7 @@ public class QuickSlotManager : MonoBehaviour
     [SerializeField] private GameObject inventoryUIRoot;
     [SerializeField] private GameObject quickSlotUIRoot;
     [SerializeField] private GameObject equipmentSlotUIRoot;
+    [SerializeField] private Transform quickslotPivot;
     // --- [퀵슬롯 선택 및 사용 로직을 위한 추가 변수] ---
     [Header("QuickSlot Usage")]
     [Tooltip("현재 선택된 퀵슬롯의 내부 인덱스 (0, 1, 2)")]
@@ -48,24 +49,27 @@ public class QuickSlotManager : MonoBehaviour
 
     private void Awake()
     {
-        // quickSlots 배열 초기화 (퀵슬롯 개수만큼)
+        // quickSlots 배열 초기화
         quickSlots = new InventorySlot[quickSlotCount];
         for (int i = 0; i < quickSlotCount; i++)
         {
-            // InventorySlot은 struct이므로 new InventorySlot()으로 초기화하면 
-            // itemData=null, stackSize=0으로 안전하게 초기화됩니다.
             quickSlots[i] = new InventorySlot();
         }
 
-        // 초기 선택 슬롯 하이라이트 설정
         RefreshQuickSlotHighlights();
-
-        // 초기에는 UI를 비활성화합니다.
-        if (inventoryUIRoot != null)
+        if (quickSlotUIRoot != null && quickslotPivot != null)
         {
-            inventoryUIRoot.SetActive(false);
-            quickSlotUIRoot.SetActive(false);
-            equipmentSlotUIRoot.SetActive(false) ;
+            quickSlotUIRoot.transform.SetParent(quickslotPivot, worldPositionStays: false);
+        }
+        // ✅ UI 초기 비활성화
+        if (inventoryUIRoot != null) inventoryUIRoot.SetActive(false);
+        if (quickSlotUIRoot != null) quickSlotUIRoot.SetActive(true); // 항상 켜둠
+        if (equipmentSlotUIRoot != null) equipmentSlotUIRoot.SetActive(false);
+
+        // ✅ 퀵슬롯 UI를 손목 피봇에 붙이기
+        if (quickSlotUIRoot != null && quickslotPivot != null)
+        {
+            quickSlotUIRoot.transform.SetParent(quickslotPivot, worldPositionStays: false);
         }
     }
 
@@ -125,12 +129,7 @@ public class QuickSlotManager : MonoBehaviour
 
             // 인벤토리 UI 토글
             inventoryUIRoot.SetActive(!currentState);
-
-            // 퀵슬롯 UI 토글
-            if (quickSlotUIRoot != null)
-            {
-                quickSlotUIRoot.SetActive(!currentState);
-            }
+                    
 
             // 장비 슬롯 UI 토글 (💥 새로 추가된 부분)
             if (equipmentSlotUIRoot != null)
