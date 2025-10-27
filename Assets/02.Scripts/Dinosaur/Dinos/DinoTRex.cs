@@ -120,7 +120,8 @@ public class DinoTrex : DinoBase
         foreach (Collider col in dinos)
         {
             if (col.gameObject == gameObject) continue; // 자기 자신 제외
-            if (col.TryGetComponent<DinoStatus>(out DinoStatus stat))
+            DinoStatus stat = col.GetComponent<DinoStatus>();
+            if (stat != null)
             {
                 if (stat.stats.threat < status.stats.threat)
                 {
