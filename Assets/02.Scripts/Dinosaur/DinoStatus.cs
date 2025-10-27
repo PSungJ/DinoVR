@@ -82,7 +82,6 @@ public class DinoStatus : MonoBehaviour
                     fearOrigin = null;
             }
 
-            RaycastHit hit;
             Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness);
             
             foreach (Collider col in dinos)
