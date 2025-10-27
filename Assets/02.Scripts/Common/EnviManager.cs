@@ -25,9 +25,14 @@ public class EnviManager : MonoBehaviour
     [Header("Rain Settings")]
     public ParticleSystem rainParticle;
     private bool isRaining = false;
+    [Range(0f, 1f)] public float rainStartChance = 0.2f; // 비 시작 확률
+    [Range(0f, 1f)] public float rainStopChance = 0.2f; // 비 멈출 확률
 
-    [Range(0f, 1f)] public float rainStartChance = 0.1f; // 비 시작 확률
-    [Range(0f, 1f)] public float rainStopChance = 0.1f; // 비 멈출 확률
+    [Header("Rain Sound Settings")]
+    public AudioSource rainAudioSource;
+    public AudioClip rainClip;
+    public float rainVolume = 0.8f;
+    public float fadeDuration = 2f;
 
     // 추가된 변수: 환경 업데이트 주기 조절용
     private float envUpdateTimer = 0f;
@@ -40,6 +45,15 @@ public class EnviManager : MonoBehaviour
 
         if (directionalLight != null)
             directionalLight.enabled = true;
+
+        // AudioSource 자동 설정 보조
+        if (rainAudioSource == null && rainClip != null)
+        {
+            rainAudioSource = gameObject.AddComponent<AudioSource>();
+            rainAudioSource.clip = rainClip;
+            rainAudioSource.loop = true;
+            rainAudioSource.playOnAwake = false;
+        }
 
         StartCoroutine(DayNightCycle());
         StartCoroutine(RainRoutine());
@@ -118,8 +132,8 @@ public class EnviManager : MonoBehaviour
     {
         while (true)
         {
-            // 불필요한 매 프레임 연산 제거 → 10분마다 날씨 변화 시도
-            yield return new WaitForSeconds(600f);
+            // 불필요한 매 프레임 연산 제거 → 낮/밤 변화 할 때마다 날씨 변화 시도
+            yield return new WaitForSeconds(cycleDuration);
             HandleRainChance();
         }
     }
@@ -143,6 +157,8 @@ public class EnviManager : MonoBehaviour
         isRaining = true;
         if (rainParticle != null)
             rainParticle.Play();
+        if (rainAudioSource != null)
+            StartCoroutine(FadeInRainSound());
 #if UNITY_EDITOR
         Debug.Log("비가 내리기 시작합니다.");
 #endif
@@ -153,8 +169,41 @@ public class EnviManager : MonoBehaviour
         isRaining = false;
         if (rainParticle != null)
             rainParticle.Stop();
+        if (rainAudioSource != null)
+            StartCoroutine(FadeOutRainSound());
 #if UNITY_EDITOR
         Debug.Log("비가 그쳤습니다.");
 #endif
+    }
+
+    // 부드럽게 볼륨 증가
+    private IEnumerator FadeInRainSound()
+    {
+        rainAudioSource.volume = 0f;
+        if (!rainAudioSource.isPlaying)
+            rainAudioSource.Play();
+
+        float elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            rainAudioSource.volume = Mathf.Lerp(0f, rainVolume, elapsed / fadeDuration);
+            yield return null;
+        }
+        rainAudioSource.volume = rainVolume;
+    }
+
+    // 부드럽게 볼륨 감소
+    private IEnumerator FadeOutRainSound()
+    {
+        float startVolume = rainAudioSource.volume;
+        float elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            rainAudioSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / fadeDuration);
+            yield return null;
+        }
+        rainAudioSource.Stop();
     }
 }
