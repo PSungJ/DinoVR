@@ -28,7 +28,8 @@ public class QuickSlotManager : MonoBehaviour
     [SerializeField] private Inventory inventoryReference;
 
     [SerializeField] private GameObject inventoryUIRoot;
-
+    [SerializeField] private GameObject quickSlotUIRoot;
+    [SerializeField] private GameObject equipmentSlotUIRoot;
     // --- [퀵슬롯 선택 및 사용 로직을 위한 추가 변수] ---
     [Header("QuickSlot Usage")]
     [Tooltip("현재 선택된 퀵슬롯의 내부 인덱스 (0, 1, 2)")]
@@ -63,6 +64,8 @@ public class QuickSlotManager : MonoBehaviour
         if (inventoryUIRoot != null)
         {
             inventoryUIRoot.SetActive(false);
+            quickSlotUIRoot.SetActive(false);
+            equipmentSlotUIRoot.SetActive(false) ;
         }
     }
 
@@ -119,15 +122,30 @@ public class QuickSlotManager : MonoBehaviour
         if (inventoryUIRoot != null)
         {
             bool currentState = inventoryUIRoot.activeSelf;
+
+            // 인벤토리 UI 토글
             inventoryUIRoot.SetActive(!currentState);
 
-            Debug.Log($"[QuickSlotManager] Inventory/QuickSlot UI Toggled to: {!currentState}");
+            // 퀵슬롯 UI 토글
+            if (quickSlotUIRoot != null)
+            {
+                quickSlotUIRoot.SetActive(!currentState);
+            }
+
+            // 장비 슬롯 UI 토글 (💥 새로 추가된 부분)
+            if (equipmentSlotUIRoot != null)
+            {
+                equipmentSlotUIRoot.SetActive(!currentState);
+            }
+
+            Debug.Log($"[QuickSlotManager] Inventory/QuickSlot/Equipment UI Toggled to: {!currentState}");
         }
         else
         {
             Debug.LogWarning("[QuickSlotManager] inventoryUIRoot is null. Cannot toggle UI visibility directly.");
         }
     }
+
 
     /// <summary>
     /// 다음 퀵슬롯을 선택합니다.
