@@ -8,11 +8,11 @@ public class QuickSlotUI : MonoBehaviour
     // QuickSlotManager 참조 필수 (선택 인덱스를 받아옴)
     [SerializeField] private QuickSlotManager quickSlotManager;
 
-    [Header("UI Elements (5 Slots)")]
+    [Header("UI Elements (3 Slots)")]
     // 5개의 슬롯 UI GameObject 루트를 순서대로 할당합니다.
-    [SerializeField] private List<GameObject> slotUIRoots = new List<GameObject>(5); 
+    [SerializeField] private List<GameObject> slotUIRoots = new List<GameObject>(3); 
     // 각 슬롯의 아이콘 Image 컴포넌트를 순서대로 할당합니다.
-    [SerializeField] private List<Image>slotIcons = new List<Image>(5); 
+    [SerializeField] private List<Image>slotIcons = new List<Image>(3); 
 
     [Header("Selection Indicator")]
     // 현재 선택된 슬롯을 강조하는 UI 요소 (예: 테두리, 하이라이트 이미지 등)

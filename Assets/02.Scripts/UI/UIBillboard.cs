@@ -1,86 +1,65 @@
-// UIBillboard.cs
-
 using UnityEngine;
 
 /// <summary>
-/// 이 스크립트는 UI 패널의 위치를 지정된 Pivot 오브젝트에 고정하고, 
-/// Slerp를 사용하여 지정된 Target Transform(카메라)을 부드럽게 바라보도록 회전시킵니다.
-/// UI의 앞면이 플레이어를 향하도록 180도 보정합니다.
+/// UI를 지정된 Pivot 위치에 고정하고, 
+/// 항상 Target(플레이어 카메라)을 부드럽게 바라보게 하는 빌보드 스크립트.
+/// UI의 앞면이 플레이어를 향하도록 180도 회전 보정 포함.
 /// </summary>
 public class UIBillboard : MonoBehaviour
 {
-    // [SerializeField] 속성으로 인스펙터에 노출. 플레이어 카메라 Transform
-    [SerializeField]
-    private Transform targetTransform;
+    [Header("Target & Pivot")]
+    [SerializeField] private Transform targetTransform;  // 플레이어 카메라
+    [SerializeField] private Transform pivotTransform;   // UI 위치 기준점
 
-    // UI 패널의 위치를 고정할 Pivot Transform
-    [SerializeField]
-    private Transform pivotTransform;
-
-    // Slerp 회전 속도 조절 (값이 높을수록 빠르게 목표를 따라감)
-    [SerializeField]
-    private float rotationSpeed = 5f;
+    [Header("Rotation Settings")]
+    [SerializeField] private float rotationSpeed = 5f;   // 회전 보간 속도
 
     void Start()
     {
-        // Target Transform 설정 확인 및 대체 로직 유지
+        // 타겟 자동 지정
         if (targetTransform == null)
         {
             if (Camera.main != null)
             {
                 targetTransform = Camera.main.transform;
-                Debug.LogWarning("Target Transform이 설정되지 않아, 'MainCamera'를 타겟으로 지정했습니다.");
+                Debug.LogWarning("[UIBillboard] Target Transform이 설정되지 않아 MainCamera를 자동 지정했습니다.");
             }
             else
             {
-                Debug.LogError("씬에 'MainCamera'가 없거나 Target Transform이 설정되지 않았습니다.");
+                Debug.LogError("[UIBillboard] Target Transform이 설정되지 않았고 MainCamera도 없습니다.");
             }
         }
 
         if (pivotTransform == null)
         {
-            Debug.LogWarning("Pivot Transform이 설정되지 않았습니다. UI 패널의 위치는 현재 위치에 고정됩니다.");
+            Debug.LogWarning("[UIBillboard] Pivot Transform이 설정되지 않았습니다. 현재 위치에 고정됩니다.");
         }
     }
 
-    void Update()
+    void LateUpdate()
     {
-        // 1. 회전 처리 (Slerp 적용)
-        if (targetTransform != null)
-        {
-            // A. 목표 회전 (Target Rotation) 계산
-            // 현재 위치에서 타겟을 바라보는 방향 벡터
-            Vector3 directionToTarget = targetTransform.position - transform.position;
+        if (targetTransform == null) return;
 
-            // 타겟을 바라보는 기본 회전
-            Quaternion baseRotation = Quaternion.LookRotation(directionToTarget);
+        // --- 1. 부드러운 회전 ---
+        Vector3 directionToTarget = targetTransform.position - transform.position;
 
-            // UI의 앞면이 플레이어를 향하도록 180도 회전값 (Y축 기준)을 정의
-            Quaternion flipRotation = Quaternion.Euler(0, 180, 0);
+        // 기본적으로 카메라를 바라보는 회전
+        Quaternion baseRotation = Quaternion.LookRotation(directionToTarget);
 
-            // 최종 목표 회전 (회전 + 반전)
-            Quaternion targetRotation = baseRotation * flipRotation;
+        // UI의 앞면이 카메라를 향하도록 180도 보정
+        Quaternion flipRotation = Quaternion.Euler(0, 180, 0);
+        Quaternion targetRotation = baseRotation * flipRotation;
 
-            // B. Slerp를 사용하여 현재 회전을 목표 회전으로 부드럽게 업데이트
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                Time.deltaTime * rotationSpeed
-            );
+        // Slerp로 부드럽게 회전 보간
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            Time.deltaTime * rotationSpeed
+        );
 
-            // [선택 사항] 패널이 플레이어의 머리 높이 변화에 따라 위아래로 기울어지는 것을 완전히 방지하고 싶다면:
-            /*
-            Vector3 currentEuler = transform.localEulerAngles;
-            currentEuler.x = 0; // X축(피치) 회전 고정
-            currentEuler.z = 0; // Z축(롤) 회전 고정
-            transform.localEulerAngles = currentEuler;
-            */
-        }
-
-        // 2. 위치 고정 처리
+        // --- 2. 위치 고정 ---
         if (pivotTransform != null)
         {
-            // UI 패널의 위치를 Pivot 오브젝트의 위치로 고정합니다.
             transform.position = pivotTransform.position;
         }
     }
