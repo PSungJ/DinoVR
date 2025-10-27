@@ -2,16 +2,15 @@ using UnityEngine;
 
 public class UIManager : MonoBehaviour
 {
+    // 지워도 되는 스크립트
     [Header("Dependencies")]
     // 인스펙터에서 할당할 UI 패널 (최상위 부모 오브젝트)
     [SerializeField] private GameObject inventoryPanel;
-    [SerializeField] private GameObject statusPanel;
-
+ 
     [Header("VR Input Settings")]
     [Tooltip("인벤토리를 토글할 VR Input Manager 버튼 이름")]
     [SerializeField] private string toggleInventoryButton = "VR_Menu_Inventory";
-    [Tooltip("스탯 창을 토글할 VR Input Manager 버튼 이름")]
-    [SerializeField] private string toggleStatusButton = "VR_Menu_Status";
+ 
 
     private bool isInventoryOpen = false;
     private bool isStatusOpen = false;
@@ -20,7 +19,7 @@ public class UIManager : MonoBehaviour
     {
         // 게임 시작 시 모든 패널 닫기
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
-        if (statusPanel != null) statusPanel.SetActive(false);
+      
     }
 
     private void Update()
@@ -31,11 +30,6 @@ public class UIManager : MonoBehaviour
             ToggleInventory();
         }
 
-        // 스탯 창 토글 버튼 감지
-        if (!string.IsNullOrEmpty(toggleStatusButton) && Input.GetButtonDown(toggleStatusButton))
-        {
-            ToggleStatus();
-        }
     }
 
     // ----------------------------------------------------
@@ -47,8 +41,7 @@ public class UIManager : MonoBehaviour
 
         if (inventoryPanel != null)
         {
-            inventoryPanel.SetActive(isInventoryOpen);
-            if (isInventoryOpen) CloseStatus(); // 인벤토리 열리면 스탯 창 닫기
+            inventoryPanel.SetActive(isInventoryOpen);          
             // TODO: TimeScale 조정 로직 추가 (일시 정지)
         }
     }
@@ -63,27 +56,5 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // ----------------------------------------------------
-    // [스탯 창 토글/닫기 로직]
-    // ----------------------------------------------------
-    public void ToggleStatus()
-    {
-        isStatusOpen = !isStatusOpen;
 
-        if (statusPanel != null)
-        {
-            statusPanel.SetActive(isStatusOpen);
-            if (isStatusOpen) CloseInventory(); // 스탯 창 열리면 인벤토리 닫기
-        }
-    }
-
-    // 다른 메뉴에서 호출 시 스탯 창 닫기
-    public void CloseStatus()
-    {
-        if (isStatusOpen)
-        {
-            isStatusOpen = false;
-            statusPanel.SetActive(false);
-        }
-    }
 }

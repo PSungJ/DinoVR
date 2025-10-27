@@ -30,7 +30,7 @@ public class QuickSlotManager : MonoBehaviour
     [SerializeField] private GameObject inventoryUIRoot;
     [SerializeField] private GameObject quickSlotUIRoot;
     [SerializeField] private GameObject equipmentSlotUIRoot;
-    [SerializeField] private Transform quickslotPivot;
+    [SerializeField] private QuickSlotBillboard quickSlotBillboard;
     // --- [퀵슬롯 선택 및 사용 로직을 위한 추가 변수] ---
     [Header("QuickSlot Usage")]
     [Tooltip("현재 선택된 퀵슬롯의 내부 인덱스 (0, 1, 2)")]
@@ -57,20 +57,14 @@ public class QuickSlotManager : MonoBehaviour
         }
 
         RefreshQuickSlotHighlights();
-        if (quickSlotUIRoot != null && quickslotPivot != null)
-        {
-            quickSlotUIRoot.transform.SetParent(quickslotPivot, worldPositionStays: false);
-        }
+      
         // ✅ UI 초기 비활성화
         if (inventoryUIRoot != null) inventoryUIRoot.SetActive(false);
         if (quickSlotUIRoot != null) quickSlotUIRoot.SetActive(true); // 항상 켜둠
         if (equipmentSlotUIRoot != null) equipmentSlotUIRoot.SetActive(false);
 
         // ✅ 퀵슬롯 UI를 손목 피봇에 붙이기
-        if (quickSlotUIRoot != null && quickslotPivot != null)
-        {
-            quickSlotUIRoot.transform.SetParent(quickslotPivot, worldPositionStays: false);
-        }
+     
     }
 
     // ----------------------------------------------------
@@ -121,30 +115,30 @@ public class QuickSlotManager : MonoBehaviour
     /// <summary>
     /// Inventory 및 QuickSlot UI를 활성화/비활성화합니다.
     /// </summary>
+
     public void ToggleInventoryAndQuickSlotUI()
     {
         if (inventoryUIRoot != null)
         {
             bool currentState = inventoryUIRoot.activeSelf;
 
-            // 인벤토리 UI 토글
+            // 인벤토리 / 장비 UI 토글
             inventoryUIRoot.SetActive(!currentState);
-                    
-
-            // 장비 슬롯 UI 토글 (💥 새로 추가된 부분)
             if (equipmentSlotUIRoot != null)
-            {
                 equipmentSlotUIRoot.SetActive(!currentState);
+
+            // 🔥 퀵슬롯 빌보드 전환
+            if (quickSlotBillboard != null)
+            {
+                if (!currentState)
+                    quickSlotBillboard.DetachFromPivot(); // 인벤토리 열릴 때 → 원래 위치/크기
+                else
+                    quickSlotBillboard.AttachToPivot();    // 인벤토리 닫힐 때 → 손목 위치/크기
             }
 
             Debug.Log($"[QuickSlotManager] Inventory/QuickSlot/Equipment UI Toggled to: {!currentState}");
         }
-        else
-        {
-            Debug.LogWarning("[QuickSlotManager] inventoryUIRoot is null. Cannot toggle UI visibility directly.");
-        }
     }
-
 
     /// <summary>
     /// 다음 퀵슬롯을 선택합니다.
