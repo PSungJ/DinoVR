@@ -5732,12 +5732,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 431947574}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.183, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.040266857, z: 0.014681594}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8455689159912398057}
+  m_Father: {fileID: 7413694844487068810}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &431947576
 CapsuleCollider:
@@ -24202,7 +24202,7 @@ MonoBehaviour:
   equipmentSlotUIs:
   - {fileID: 1356569088}
   - {fileID: 906422156}
-  equipmentSlotStartIndex: 32
+  equipmentSlotStartIndex: 33
 --- !u!114 &1660956724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28027,7 +28027,12 @@ PrefabInstance:
         type: 3}
       propertyPath: m_ForwardSource
       value: 
-      objectReference: {fileID: 1933257573}
+      objectReference: {fileID: 8455689159912398057}
+    - target: {fileID: 810019319561094050, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      propertyPath: m_HeadTransform
+      value: 
+      objectReference: {fileID: 8455689159912398057}
     - target: {fileID: 810019319561094050, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_RightHandMoveAction.m_Reference
@@ -28175,6 +28180,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5897762254924303432, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
+      propertyPath: m_LeftHandSnapTurnAction.m_Reference
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5897762254924303432, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
       propertyPath: m_LeftHandSnapTurnAction.m_UseReference
       value: 0
       objectReference: {fileID: 0}
@@ -28211,6 +28221,11 @@ PrefabInstance:
     - target: {fileID: 6355494128053973299, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468442521412095314, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6555856430666216887, guid: d6878e1999eb4b44a9f5a263af86c185,
@@ -75889,12 +75904,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1932278030}
   m_CullTransparentMesh: 1
---- !u!4 &1933257573 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6598815579406187027, guid: 18ddb545287c546e19cc77dc9fbb2189,
-    type: 3}
-  m_PrefabInstance: {fileID: 818651856}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1937678769
 GameObject:
   m_ObjectHideFlags: 0
@@ -77387,14 +77396,10 @@ MonoBehaviour:
   - {fileID: 671833064}
   - {fileID: 1642130279}
   - {fileID: 1729473821}
-  - {fileID: 0}
-  - {fileID: 0}
   slotIcons:
   - {fileID: 671833066}
   - {fileID: 1642130281}
   - {fileID: 1729473823}
-  - {fileID: 0}
-  - {fileID: 0}
   selectionIndicator: {fileID: 1937678769}
 --- !u!114 &2083635287
 MonoBehaviour:
@@ -96102,6 +96107,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1619163260698281350}
+  - {fileID: 431947575}
   m_Father: {fileID: 2389000053329534414}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7449339334431742374
@@ -98272,14 +98278,13 @@ Transform:
   m_GameObject: {fileID: 9084733315289925203}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.86, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3523345312459964175}
   - {fileID: 3193799097694787643}
   - {fileID: 4654113786188145264}
-  - {fileID: 431947575}
   m_Father: {fileID: 199475151}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8511091311423767147
@@ -99884,6 +99889,18 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: 6972639530819350904, guid: c348712bda248c246b8c49b3db54643f,
       type: 3}
+  turnAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Turn
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: c71fc110-91c6-4b04-b820-0289083d0f78
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 0}
   animator: {fileID: 2573957447124174483}
   maxAnimatorSpeedValue: 6
 --- !u!136 &9084733315289925205
