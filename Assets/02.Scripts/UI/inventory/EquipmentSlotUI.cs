@@ -71,55 +71,32 @@ public class EquipmentSlotUI : MonoBehaviour
     /// </summary>
     public void UpdateSlotUI(EquippableItemSO currentItem, int stackSize)
     {
-        // 스택 사이즈가 1 이상일 경우 장착되었다고 판단합니다.
         bool isEquipped = (currentItem != null && stackSize > 0);
         string itemName = isEquipped ? currentItem.itemName : "Empty";
 
-        // ⭐[디버그 추가] UpdateSlotUI가 호출될 때 전달된 데이터 확인
         Debug.Log($"[EquipmentSlotUI - {slotType}] Update UI Received: Item='{itemName}', Equipped={isEquipped}, Stack={stackSize}.");
 
-
-        // 1. UI 시각적 업데이트
         if (itemIcon != null)
         {
             if (isEquipped)
             {
-                // 아이템이 장착된 경우, 아이템의 아이콘 표시
                 itemIcon.sprite = currentItem.itemIcon;
-                // ⭐[디버그 추가] 아이템 장착 시 아이콘 변경 확인
+                itemIcon.enabled = true; // ✅ 아이콘을 반드시 활성화시켜야 함
                 Debug.Log($"[EquipmentSlotUI - {slotType}] Item Equipped: Icon set to {currentItem.itemIcon?.name}.");
             }
             else
             {
-                // 아이템이 장착되지 않은 경우, 기본값(Inspector 설정값)으로 되돌립니다.
                 itemIcon.sprite = defaultSprite;
-                // ⭐[디버그 추가] 빈 슬롯으로 설정 시 아이콘 변경 확인
+                itemIcon.enabled = false; // 슬롯 비었을 때 비활성화 (선택)
                 Debug.Log($"[EquipmentSlotUI - {slotType}] Slot Empty: Icon reset to Default Sprite ({defaultSprite?.name}).");
             }
-
-            // itemIcon.enabled는 항상 true 상태를 유지합니다.
         }
 
-        // emptyState는 슬롯이 비어있을 때 (isEquipped = false) 보여줄 배경/플레이스홀더 이미지라고 가정합니다.
         if (emptyState != null)
-        {
             emptyState.SetActive(!isEquipped);
-        }
 
-        // 2. ⭐[핵심] XR 상호작용 기능 활성화/비활성화 제어
         if (grabInteractable != null)
-        {
-            // 아이템이 있을 때만 Grab이 가능하여 드래그 앤 드롭으로 해제가 가능합니다.
             grabInteractable.enabled = isEquipped;
-
-            // ⭐ 디버깅: 현재 슬롯의 Grab 가능 상태 출력
-            Debug.Log($"[EquipmentSlotUI - {slotType}] Slot updated. Item: {itemName}. GrabInteractable Enabled: {isEquipped}");
-        }
-        else
-        {
-            // grabInteractable 연결 누락 시 경고
-            Debug.LogWarning($"[EquipmentSlotUI - {slotType}] grabInteractable이 Inspector에 연결되지 않았습니다. Grab 기능이 작동하지 않을 수 있습니다.");
-        }
     }
 
     // ----------------------------------------------------
