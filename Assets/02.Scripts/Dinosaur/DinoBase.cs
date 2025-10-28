@@ -1,18 +1,19 @@
-using System.Collections;
-
 using UnityEngine;
 using UnityEngine.AI;
 
-                      // 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
+// 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
 public enum DinoState { IDLE, ROAMING, EATING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK};
 
+[RequireComponent(typeof(NavMeshAgent))]
+[RequireComponent(typeof(DinoStatus))]
+[RequireComponent(typeof(Animator))]
 public class DinoBase : MonoBehaviour
 {
     [Header("컴포넌트 및 시스템 속성")]
     public Animator animator;
-    public DinoSound sound;
     public DinoStatus status;
     public NavMeshAgent agent;
+    public DinoSound sound;
 
     public DinoState currentState;
 
@@ -22,6 +23,8 @@ public class DinoBase : MonoBehaviour
     protected float currentAttackTime = 0f;
     protected float toAttackTime = 3f; // 공격하기 까지 기다리는 시간
 
+    protected float breathSoundTime = 0f; // 숨소리 재생 시간
+
 
     [SerializeField]
     protected float chaseTime = 0f;
@@ -29,6 +32,7 @@ public class DinoBase : MonoBehaviour
     protected float callTime = 4f;
 
     protected bool isSearching = false;
+    public float searchingTime = 0f;
 
     public bool isAnimating = false;
     public string currentStateName;
@@ -47,23 +51,32 @@ public class DinoBase : MonoBehaviour
     protected readonly string _aniAttack1 = "Attack1";
     protected readonly string _aniCall = "Call";
 
-    void OnEnable()
+    private void Awake()
     {
-        TryGetComponent<DinoSound>(out sound);
-        TryGetComponent<DinoStatus>(out status);
+        sound = GetComponent<DinoSound>();
         agent = GetComponent<NavMeshAgent>();
-        TryGetComponent<Animator>(out animator);
+        animator = GetComponent<Animator>();
+        status = GetComponent<DinoStatus>();
+    }
+
+    private void OnEnable()
+    {
+        DinoInit();
+    }
+
+    public void DinoInit()  // 공룡 배치시 실행 해야함
+    {
+        status.StatusInit();
         agent.updateRotation = false;
-        //agent.updatePosition = false;
         agent.isStopped = true;
         agent.avoidancePriority = status.stats.pp;
-        status.StatusInit();
     }
 
     protected virtual void Update()
     {
         HandleState();
         UpdateAnimator();
+        PlayBreathSound();
 
         if (currentState == DinoState.DEATH)    // 죽었으면 다 무시
             return;
@@ -72,6 +85,20 @@ public class DinoBase : MonoBehaviour
         if (agent.hasPath)
         {
             MoveWithSteering();
+        }
+    }
+
+    private void PlayBreathSound()      // 5 ~ 10 초 마다 숨소리 재생
+    {
+        if (currentState == DinoState.IDLE || currentState == DinoState.ROAMING)
+        {
+            if (breathSoundTime <= 0)        
+            {
+                breathSoundTime = Random.Range(5f, 10f);
+                sound.PlayBreath();
+            }
+            else
+                breathSoundTime -= Time.deltaTime;
         }
     }
 
@@ -156,7 +183,8 @@ public class DinoBase : MonoBehaviour
     public virtual void Idle()  // 기본 상태
     {
         isSearching = false;
-        
+        searchingTime = 0f;
+
         if (currentIdleTime < toRoamTime)           // toRoamTime 만큼 대기 후 떠돌기 위한 체크
         {
             currentIdleTime += Time.deltaTime;
@@ -237,7 +265,7 @@ public class DinoBase : MonoBehaviour
         if (!agent.hasPath)     // 도망 지점에 도착하면 경계 상태로 전환
         {
             ResetTarget();
-            status.fearCurrent = 50f;
+            status.fearCurrent = 10f;
             ChangeState(DinoState.SEARCHING);
         }
         else if (status.fearOrigin != null && !status.IsAfraid())                         // 도망중에 적이 사거리에 오면
@@ -343,7 +371,7 @@ public class DinoBase : MonoBehaviour
             if (status.IsAfraid())                      // 공포상태라면 도망
                 StartFleeing();
             // 포효 상태에서 적이 공격사거리에 들어오면 공격하기
-            else if (Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
+            else if (status.fearOrigin != null && Vector3.Distance(transform.position, status.fearOrigin.position) <= status.stats.attackRange)
             {
                 ChangeState(DinoState.ATTACKING);
             }
@@ -541,6 +569,7 @@ public class DinoBase : MonoBehaviour
         Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 10f * status.stats.rotationSpeed * Time.deltaTime);
     }
+
 
     void MoveWithSteering()
     {

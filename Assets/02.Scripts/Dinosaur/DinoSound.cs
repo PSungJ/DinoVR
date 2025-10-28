@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DinoSound : MonoBehaviour
@@ -7,10 +5,12 @@ public class DinoSound : MonoBehaviour
     public AudioSource audioSource;
     public float volume = 1f;
     [Header("오디오 클립")]
+    public AudioClip[] stepClips;  // 발소리
+    public AudioClip[] breathClips;  // 숨소리
     public AudioClip[] growlClips;  // 으르렁
-    public AudioClip[] yelpClips;   // 피격
     public AudioClip[] barkClips;   // 짖기
     public AudioClip[] roarClips;   // 포효
+    public AudioClip[] yelpClips;   // 피격
     public AudioClip[] deathClips;  // 죽음
 
     void Start()
@@ -18,27 +18,32 @@ public class DinoSound : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-    public void Growl()
+    public void PlayGrowl() // 으르렁
     {
         int Index = Random.Range(0, growlClips.Length);
 
-        //AudioClip clip = growlClips[Index];
-        //audioSource.PlayOneShot(clip);
-    }
-
-    //Yelp Sounds (Random)
-
-    public void Yelp()
-    {
-        int Index = Random.Range(0, yelpClips.Length);
-
-        AudioClip clip = yelpClips[Index];
+        AudioClip clip = growlClips[Index];
         audioSource.PlayOneShot(clip);
     }
 
-    //Bark Sounds (Random)
+    public void PlayStep() // 발소리
+    {
+        int Index = Random.Range(0, stepClips.Length);
 
-    public void Bark()
+        AudioClip clip = stepClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void PlayBreath() // 경계
+    {
+        int Index = Random.Range(0, breathClips.Length);
+
+        AudioClip clip = breathClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+
+    public void PlayBark()  // 짖기
     {
         int Index = Random.Range(0, barkClips.Length);
 
@@ -46,20 +51,25 @@ public class DinoSound : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
-    //Roar Sounds (Random)
 
-    public void Roar()
+    public void PlayRoar()  // 포효
     {
         int Index = Random.Range(0, roarClips.Length);
 
-        //AudioClip clip = roarClips[Index];
-        //audioSource.PlayOneShot(clip);
+        AudioClip clip = roarClips[Index];
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void PlayYelp()  // 피격
+    {
+        int Index = Random.Range(0, yelpClips.Length);
+
+        AudioClip clip = yelpClips[Index];
+        audioSource.PlayOneShot(clip);
     }
 
 
-    //Death Sounds (Random)
-
-    public void Death()
+    public void PlayDeath() // 죽음
     {
         int Index = Random.Range(0, deathClips.Length);
 

@@ -13,11 +13,13 @@ public class DinoRaptor : DinoBase
         if (agent.hasPath)
             agent.ResetPath();
 
-        if(status.hungerCurrent > status.stats.hungerMax / 2f)
+        searchingTime += Time.deltaTime;
+
+        if (status.hungerCurrent > status.stats.hungerMax / 2f || searchingTime >= 10f)
         {
             if (status.target != null)
             {
-                status.AddFear(1f, status.target);
+                status.AddFear(0.1f, status.target);
             }
         }
 
@@ -34,12 +36,12 @@ public class DinoRaptor : DinoBase
             {
                 currentAttackTime = 0f;
                 float dis = (status.target.position - transform.position).magnitude;
-                if(status.meat != null && dis > status.stats.detactRange / 2) // 먹을게 있는데 멀리서 다가온다면
+                if(status.meat != null && dis > status.stats.detactRange / 2f) // 먹을게 있는데 멀리서 다가온다면
                 {
                     if (Time.time - lastRoarTime >= 5f)
                         ChangeState(DinoState.ROAR);
                 }
-                else
+                else if (status.RayCheck(status.target))
                 {
                     ChangeState(DinoState.CALL);
                     isAnimating = true;
@@ -154,6 +156,7 @@ public class DinoRaptor : DinoBase
 
     public void Calling()
     {
+        sound.PlayBark();
         Collider[] raptors = Physics.OverlapSphere(transform.position, 80f, LayerMask.GetMask("Dinosaur"));
         foreach (Collider col in raptors)
         {

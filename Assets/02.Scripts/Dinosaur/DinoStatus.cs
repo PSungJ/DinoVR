@@ -48,12 +48,6 @@ public class DinoStatus : MonoBehaviour
             {
                 hpCurrent = Mathf.Clamp(hpCurrent + 1f, 0, stats.hpMax);
             }
-            if (fearCurrent > 0 && Time.time - lastFearTime >= stats.fearReduceInterval)
-            {
-                fearCurrent = Mathf.Clamp(fearCurrent - stats.fearThreshold * 0.01f, 0, stats.fearThreshold);
-                if (fearCurrent == 0)
-                    fearOrigin = null;
-            }
         }
     }
 
@@ -81,22 +75,38 @@ public class DinoStatus : MonoBehaviour
         {
             yield return new WaitForSeconds(targetingInterval);
 
-            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness, LayerMask.GetMask("Dinosaur"));
+            if (fearCurrent > 0 && Time.time - lastFearTime >= stats.fearReduceInterval)
+            {
+                fearCurrent = Mathf.Clamp(fearCurrent - stats.fearThreshold * 0.01f, 0, stats.fearThreshold);
+                if (fearCurrent == 0)
+                    fearOrigin = null;
+            }
+
+            Collider[] dinos = Physics.OverlapCapsule(transform.position, transform.position + transform.forward * stats.detactRange, stats.awareness);
+            
             foreach (Collider col in dinos)
             {
                 if (col.gameObject == gameObject) continue; // 자기 자신 제외
+                //if (col.gameObject.layer != LayerMask.GetMask("Dinosaur")) // 공룡이나 사람 아니면 스킵
+                    //continue;
+                
                 DinoStatus dino = col.GetComponent<DinoStatus>();
                 if (dino != null)
                 {
                     // 자신보다 위협수치가 이하이거나 죽었다면
                     if (dino.stats.threat <= stats.threat || isDie)
                     {
-                        // 자신이 육식일때 상대가 살아있고 나보다 위협수치가 낮다면 타겟 리스트에 추가
-                        if(stats.isFoodMeat && dino.isDie == false && dino.stats.threat < stats.threat)
-                            targetList.Add(col.transform);
+                        // 자신이 육식일때 상대가 살아있고 나보다 위협수치가 낮다면
+                        if (stats.isFoodMeat && dino.isDie == false && dino.stats.threat < stats.threat)
+                        {
+                            if (RayCheck(dino.transform))
+                            {
+                                targetList.Add(dino.transform);
+                            }
+                        }
                         continue; // 자신보다 위협수치가 작은 개체면 무시
                     }
-                    AddFear(stats.threat, col.transform);
+                    AddFear(dino.stats.threat, col.transform);
                 }
 
                 
@@ -129,6 +139,28 @@ public class DinoStatus : MonoBehaviour
                 meatList.Clear();
             }
         }
+    }
+
+    public bool RayCheck(Transform target)
+    {
+        float maxDistance = stats.detactRange + stats.awareness / 2f;
+        RaycastHit hit;
+        Vector3 pos = transform.position + Vector3.up * 2f;
+        Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.blue);
+        if (Physics.Raycast(pos, target.transform.position - pos, out hit, maxDistance, LayerMask.GetMask("Building") | LayerMask.GetMask("Object")))
+        {
+            if (Vector3.Distance(target.transform.position, pos) < stats.awareness / 2f) // 장애물이 있더라도 감지범위의 50% 이내라면
+            {
+                Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.yellow);
+                return true;
+            }
+        }
+        else if (hit.transform == null)    // 닿은게 공룡이라면
+        {
+            Debug.DrawRay(pos, (target.transform.position - pos) * maxDistance, Color.red);
+            return true;
+        }
+        return false;
     }
 
     public void AddFear(float amount, Transform fearOriginTr)
