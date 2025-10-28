@@ -597,6 +597,37 @@ MonoBehaviour:
   m_StartingMultipleGrabTransformers: []
   m_AddDefaultGrabTransformers: 1
   allowGrabWhenEmpty: 0
+--- !u!1 &63857295
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 63857296}
+  m_Layer: 0
+  m_Name: EquipmentAttactPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &63857296
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 63857295}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1771030942}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &80877849
 GameObject:
   m_ObjectHideFlags: 0
@@ -20192,7 +20223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f932fc1687a3cb42bee3b3e3ba8f49c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slotType: 3
+  slotType: 1
   equipmentManager: {fileID: 1660956723}
   inventoryManager: {fileID: 1660956725}
   grabInteractable: {fileID: 1356569095}
@@ -24749,6 +24780,8 @@ MonoBehaviour:
   equipmentSlotUIs:
   - {fileID: 1356569088}
   - {fileID: 906422156}
+  rightHandInteractor: {fileID: 591114354}
+  interactionManager: {fileID: 1942472906}
   equipmentSlotStartIndex: 33
 --- !u!114 &1660956724
 MonoBehaviour:
@@ -29072,6 +29105,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 157278332}
+    - targetCorrespondingSourceObject: {fileID: 657184242222895506, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 63857296}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2218496723442559054, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
