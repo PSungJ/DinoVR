@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
+using UnityEngine.XR.Interaction.Toolkit;
 
 // 장착 아이템이 들어갈 수 있는 슬롯의 종류를 정의합니다.
 // 이 열거형은 EquippableItemSO에서도 참조됩니다.
@@ -25,6 +26,11 @@ public class EquipmentManager : MonoBehaviour
     [Header("Dependencies")]
     [SerializeField] private QuickSlotManager quickSlotManager;
     [SerializeField] private EquipmentSlotUI[] equipmentSlotUIs; // UI 갱신을 위해 UI 컴포넌트 참조
+
+    [SerializeField] private XRDirectInteractor rightHandInteractor;
+    [SerializeField] private XRInteractionManager interactionManager; // 보통 자동으로 찾아짐
+
+    private Dictionary<EquipSlotType, GameObject> equippedPrefabs = new Dictionary<EquipSlotType, GameObject>();
 
     // 인벤토리 확장 슬롯 데이터를 저장하는 내부 배열 (UI 개수와 일치)
     private InventorySlot[] equipmentSlot;
@@ -146,6 +152,37 @@ public class EquipmentManager : MonoBehaviour
         // 2. 새 아이템 장착
         equippedItems[targetSlot] = itemToEquip;
 
+        // 손에 아이템 프리팹 장착
+        // 아이템 프리팹이 XRGrabInteractable을 포함한다고 가정
+        if (itemToEquip.itemPrefab != null && rightHandInteractor != null)
+        {
+            // ✅ 기존 장착 프리팹 제거 (더 안정적인 방식으로)
+            if (equippedPrefabs.ContainsKey(targetSlot))
+            {
+                if (equippedPrefabs[targetSlot] != null)
+                    Destroy(equippedPrefabs[targetSlot]);
+                equippedPrefabs[targetSlot] = null;
+            }
+
+            // 새 프리팹 인스턴스 생성
+            GameObject newItem = Instantiate(itemToEquip.itemPrefab, rightHandInteractor.transform.position, rightHandInteractor.transform.rotation);
+
+            // XRGrabInteractable이 꼭 있어야 함
+            XRGrabInteractable grab = newItem.GetComponent<XRGrabInteractable>();
+            if (grab != null && interactionManager != null)
+            {
+                interactionManager.SelectEnter((IXRSelectInteractor)rightHandInteractor, (IXRSelectInteractable)grab);
+
+            }
+            else
+            {
+                Debug.LogError("[EquipmentManager] Item prefab is missing XRGrabInteractable or InteractionManager is not set.");
+            }
+
+            // 딕셔너리에 새 프리팹 등록
+            equippedPrefabs[targetSlot] = newItem;
+        }
+
         // UI 슬롯의 InventorySlot 데이터도 업데이트 (stack: 1)
         UpdateEquipmentSlotData(targetSlot, new InventorySlot(itemToEquip, 1));
 
@@ -154,7 +191,8 @@ public class EquipmentManager : MonoBehaviour
         // 3. UI 갱신
         UpdateEquipmentUI(targetSlot, itemToEquip);
 
-        // 4. QuickSlotManager 연동 (옵션)
+     
+
 
         return oldItem; // 이전 아이템 반환 (Inventory.cs와의 호환성 유지)
     }
@@ -175,7 +213,24 @@ public class EquipmentManager : MonoBehaviour
             // UI 갱신 (빈 슬롯 상태로 만듭니다)
             UpdateEquipmentUI(slotType, null);
 
-            // QuickSlotManager 연동 (장비 해제 시 퀵슬롯에 알림)
+            //손에 장착한 장비 아이템 프리팹 삭제.
+            if (equippedPrefabs.TryGetValue(slotType, out GameObject heldItem) && heldItem != null)
+            {
+                XRGrabInteractable grab = heldItem.GetComponent<XRGrabInteractable>();
+                if (grab != null)
+                {
+                    if (interactionManager != null)
+                    {
+                        interactionManager.SelectExit((IXRSelectInteractor)rightHandInteractor, (IXRSelectInteractable)grab);
+                    }
+
+                }
+
+                Destroy(heldItem);
+                equippedPrefabs[slotType] = null;
+            }
+
+
 
             return currentItem;
         }
@@ -316,15 +371,19 @@ public class EquipmentManager : MonoBehaviour
 
     private void UpdateEquipmentUI(EquipSlotType slotType, EquippableItemSO item)
     {
-        // 해당 EquipSlotType을 가진 UI 컴포넌트를 찾아 갱신
+        Debug.Log($"[EquipmentManager] UpdateEquipmentUI called for slot: {slotType}, item: {(item != null ? item.itemName : "None")}");
+
         foreach (var uiSlot in equipmentSlotUIs)
         {
             if (uiSlot != null && uiSlot.SlotType == slotType)
             {
-                // itemData는 EquippableItemSO, stackSize는 1로 고정
+                Debug.Log($"[EquipmentManager] Found UI slot for {slotType}. Updating UI...");
                 uiSlot.UpdateSlotUI(item, item != null ? 1 : 0);
-                break;
+                return;
             }
         }
+
+        Debug.LogWarning($"[EquipmentManager] No UI slot found for EquipSlotType: {slotType}. UI not updated.");
     }
+
 }
