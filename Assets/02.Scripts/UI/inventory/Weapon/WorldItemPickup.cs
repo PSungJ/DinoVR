@@ -14,6 +14,9 @@ public class WorldItemPickup : MonoBehaviour
     // 이 물리적 오브젝트가 나타내는 장비 스크립터블 오브젝트 데이터
     [SerializeField] private EquippableItemSO itemData;
 
+    // ✅ 장비에서 생성된 아이템은 인벤토리 추가 로직을 무시하도록 하는 플래그
+    private bool ignorePickup = false;
+
     private XRBaseInteractable interactable;
 
     private void Awake()
@@ -32,11 +35,27 @@ public class WorldItemPickup : MonoBehaviour
     }
 
     /// <summary>
+    /// EquipmentManager에서 생성된 장비 프리팹임을 표시하고,
+    /// 인벤토리 자동 추가 로직을 무시하게 합니다.
+    /// </summary>
+    public void MarkAsEquippedItem()
+    {
+        ignorePickup = true;
+    }
+
+    /// <summary>
     /// Ray Interactor가 아이템을 놓았을 때 호출됩니다.
     /// </summary>
     /// <param name="args">상호작용 이벤트를 발생시킨 Interactor 정보</param>
     private void OnItemReleased(SelectExitEventArgs args)
     {
+        // ✅ 장비 시스템에서 생성된 프리팹은 인벤토리 추가를 무시
+        if (ignorePickup)
+        {
+            Debug.Log($"[Pickup] '{gameObject.name}'은(는) 장비 시스템에서 생성된 아이템이므로 인벤토리에 추가하지 않습니다.");
+            return;
+        }
+
         if (Inventory.Instance == null)
         {
             Debug.LogError("[Pickup] Inventory.Instance가 씬에 없습니다. 아이템 획득 불가.");

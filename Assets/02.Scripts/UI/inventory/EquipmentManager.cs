@@ -123,6 +123,7 @@ public class EquipmentManager : MonoBehaviour
     /// <returns>장착 해제된 기존 아이템. 없으면 null.</returns>
     public EquippableItemSO Equip(EquippableItemSO itemToEquip, int inventorySlotIndex)
     {
+
         if (itemToEquip == null)
         {
             Debug.LogError("[EquipmentManager] Attempted to equip a null item.");
@@ -154,9 +155,10 @@ public class EquipmentManager : MonoBehaviour
 
         // 손에 아이템 프리팹 장착
         // 아이템 프리팹이 XRGrabInteractable을 포함한다고 가정
+        // 손에 아이템 프리팹 장착
         if (itemToEquip.itemPrefab != null && rightHandInteractor != null)
         {
-            // ✅ 기존 장착 프리팹 제거 (더 안정적인 방식으로)
+            // 기존 장착 프리팹 제거
             if (equippedPrefabs.ContainsKey(targetSlot))
             {
                 if (equippedPrefabs[targetSlot] != null)
@@ -164,22 +166,34 @@ public class EquipmentManager : MonoBehaviour
                 equippedPrefabs[targetSlot] = null;
             }
 
-            // 새 프리팹 인스턴스 생성
-            GameObject newItem = Instantiate(itemToEquip.itemPrefab, rightHandInteractor.transform.position, rightHandInteractor.transform.rotation);
+            // 새 프리팹 생성
+            GameObject newItem = Instantiate(
+                itemToEquip.itemPrefab,
+                rightHandInteractor.transform.position,
+                rightHandInteractor.transform.rotation
+            );
 
-            // XRGrabInteractable이 꼭 있어야 함
             XRGrabInteractable grab = newItem.GetComponent<XRGrabInteractable>();
             if (grab != null && interactionManager != null)
             {
-                interactionManager.SelectEnter((IXRSelectInteractor)rightHandInteractor, (IXRSelectInteractable)grab);
+                // 손에 쥐게 하기
+                interactionManager.SelectEnter(
+                    (IXRSelectInteractor)rightHandInteractor,
+                    (IXRSelectInteractable)grab
+                );
 
+                // ✅ Grab 해제 시 Unequip 자동 실행 등록
+                grab.selectExited.AddListener((SelectExitEventArgs args) =>
+                {
+                    Debug.Log($"[EquipmentManager] '{itemToEquip.itemName}'이(가) 손에서 놓임 → 자동 해제 실행.");
+                    Unequip(targetSlot);            // 장비 슬롯 해제 + 인벤토리 복귀
+                });
             }
             else
             {
-                Debug.LogError("[EquipmentManager] Item prefab is missing XRGrabInteractable or InteractionManager is not set.");
+                Debug.LogError("[EquipmentManager] Item prefab에 XRGrabInteractable 또는 InteractionManager 누락.");
             }
 
-            // 딕셔너리에 새 프리팹 등록
             equippedPrefabs[targetSlot] = newItem;
         }
 
