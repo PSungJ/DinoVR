@@ -13,7 +13,7 @@ public class UIManager : MonoBehaviour
  
 
     private bool isInventoryOpen = false;
-    private bool isStatusOpen = false;
+    
 
     private void Start()
     {
