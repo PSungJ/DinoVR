@@ -173,6 +173,12 @@ public class EquipmentManager : MonoBehaviour
                 rightHandInteractor.transform.rotation
             );
 
+            WeaponComponent weaponComponent = newItem.GetComponent<WeaponComponent>();
+            if (weaponComponent != null)
+            {
+                weaponComponent.SetEquipped(true);
+            }
+
             XRGrabInteractable grab = newItem.GetComponent<XRGrabInteractable>();
             if (grab != null && interactionManager != null)
             {
@@ -205,7 +211,7 @@ public class EquipmentManager : MonoBehaviour
         // 3. UI 갱신
         UpdateEquipmentUI(targetSlot, itemToEquip);
 
-     
+
 
 
         return oldItem; // 이전 아이템 반환 (Inventory.cs와의 호환성 유지)
@@ -227,22 +233,29 @@ public class EquipmentManager : MonoBehaviour
             // UI 갱신 (빈 슬롯 상태로 만듭니다)
             UpdateEquipmentUI(slotType, null);
 
-            //손에 장착한 장비 아이템 프리팹 삭제.
+   
+            // 손에 장착한 장비 아이템 프리팹 삭제.
             if (equippedPrefabs.TryGetValue(slotType, out GameObject heldItem) && heldItem != null)
             {
-                XRGrabInteractable grab = heldItem.GetComponent<XRGrabInteractable>();
-                if (grab != null)
+                WeaponComponent weaponComponent = heldItem.GetComponent<WeaponComponent>();
+                if (weaponComponent != null)
                 {
-                    if (interactionManager != null)
-                    {
-                        interactionManager.SelectExit((IXRSelectInteractor)rightHandInteractor, (IXRSelectInteractable)grab);
-                    }
+                    weaponComponent.SetEquipped(false);
+                }
 
+                XRGrabInteractable grab = heldItem.GetComponent<XRGrabInteractable>();
+                if (grab != null && grab.isSelected && interactionManager != null)
+                {
+                    interactionManager.SelectExit(
+                        (IXRSelectInteractor)rightHandInteractor,
+                        (IXRSelectInteractable)grab
+                    );
                 }
 
                 Destroy(heldItem);
                 equippedPrefabs[slotType] = null;
             }
+
 
 
 
@@ -398,6 +411,19 @@ public class EquipmentManager : MonoBehaviour
         }
 
         Debug.LogWarning($"[EquipmentManager] No UI slot found for EquipSlotType: {slotType}. UI not updated.");
+    }
+
+    /// <summary>
+    /// 현재 장착된 무기의 WeaponComponent를 반환합니다. 없으면 null.
+    /// </summary>
+    public WeaponComponent GetEquippedWeapon()
+    {
+        if (equippedPrefabs.TryGetValue(EquipSlotType.Weapon, out GameObject weaponGO) && weaponGO != null)
+        {
+            return weaponGO.GetComponent<WeaponComponent>();
+        }
+
+        return null;
     }
 
 }
