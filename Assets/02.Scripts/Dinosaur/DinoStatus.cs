@@ -109,12 +109,11 @@ public class DinoStatus : MonoBehaviour
                     AddFear(dino.stats.threat, col.transform);
                 }
 
-                
+
                 // 플레이어 인식해서 타겟에 추가하기
 
-                // Player player = col.GetCompoent<Player>();
-                // if (player != null)
-                // targetList.Add(col.transform);
+                if (col.tag == "Player")
+                    targetList.Add(col.transform);
 
             }
             if (stats.isFoodMeat) // 육식공룡 이라면
