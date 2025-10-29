@@ -67,16 +67,13 @@ public class WeaponComponent : MonoBehaviour
     {
         if (!isEquipped || fireAction == null || fireAction.action == null)
         {
-            Debug.LogWarning("[WeaponComponent] 조건 불충족 - isEquipped: " + isEquipped + ", fireAction null? " + (fireAction == null) + ", action null? " + (fireAction.action == null));
+           
             triggerPressedLastFrame = false;
             return;
         }
 
         float triggerValue = fireAction.action.ReadValue<float>();
         bool isTriggerPressed = triggerValue > 0.8f;
-
-        Debug.Log($"[WeaponComponent] 트리거값: {triggerValue}, isTriggerPressed: {isTriggerPressed}, currentAmmo: {currentAmmo}, isEquipped: {isEquipped}, nextFireTime: {nextFireTime}, Time: {Time.time}");
-
 
         if (isTriggerPressed && !triggerPressedLastFrame && Time.time >= nextFireTime)
         {

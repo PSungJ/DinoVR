@@ -1649,12 +1649,12 @@
                 },
                 {
                     "name": "FireTrigger",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "afd13e9a-4037-413f-beae-ef19b805a8cd",
-                    "expectedControlType": "",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
