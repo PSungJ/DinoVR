@@ -94,7 +94,7 @@ public class DinoBase : MonoBehaviour
         {
             if (breathSoundTime <= 0)        
             {
-                breathSoundTime = Random.Range(5f, 10f);
+                breathSoundTime = Random.Range(5f, 20f);
                 sound.PlayBreath();
             }
             else
