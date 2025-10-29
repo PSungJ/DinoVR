@@ -7,7 +7,8 @@ public enum ItemType
     Consumable,
     Weapon,
     Armor,
-    Equipment
+    Equipment,
+    Ammo
 }
 
 // NOTE: InventorySlot 구조체 정의를 이 파일에서 제거하여 '모호성 오류'를 해결했습니다.

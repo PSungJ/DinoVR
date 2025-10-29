@@ -46,7 +46,7 @@ public class PlayerStats : MonoBehaviour
         // 시작 시 머티리얼 초기화
         UpdateHealthBarMaterial();
     }
-    
+
     // ----------------------------------------------------
     // [UI 및 최종 스탯 확인 함수]
     // ----------------------------------------------------
@@ -129,8 +129,7 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
-    // 나중에 TakeDamage(float dmg) 추가 시에도
-    // UpdateHealthBarMaterial() 호출해주면 됩니다.
+    // 데미지 감소 효과
 
     public void TakeDamage(float amount)
     {
@@ -138,4 +137,21 @@ public class PlayerStats : MonoBehaviour
         UpdateHealthBarMaterial();
 
     }
+
+    private WeaponComponent GetEquippedWeapon()
+    {
+        if (EquipmentManager.Instance != null)
+        {
+            return EquipmentManager.Instance.GetEquippedWeapon();
+        }
+        return null;
+    }
+
+    public int GetCurrentAmmo()
+    {
+        WeaponComponent weapon = GetEquippedWeapon();
+        return weapon != null ? weapon.currentAmmo : 0;
+    }
+
+
 }

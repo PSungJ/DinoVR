@@ -12,7 +12,8 @@ public class WorldItemPickup : MonoBehaviour
 {
     [Header("Item Data")]
     // 이 물리적 오브젝트가 나타내는 장비 스크립터블 오브젝트 데이터
-    [SerializeField] private EquippableItemSO itemData;
+    [SerializeField] private ItemBaseSO itemData;
+
 
     // ✅ 장비에서 생성된 아이템은 인벤토리 추가 로직을 무시하도록 하는 플래그
     private bool ignorePickup = false;
