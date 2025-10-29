@@ -67,6 +67,7 @@ public class DinoBase : MonoBehaviour
     public void DinoInit()  // 공룡 배치시 실행 해야함
     {
         status.StatusInit();
+        agent.updatePosition = false;
         agent.updateRotation = false;
         agent.isStopped = true;
         agent.avoidancePriority = status.stats.pp;
