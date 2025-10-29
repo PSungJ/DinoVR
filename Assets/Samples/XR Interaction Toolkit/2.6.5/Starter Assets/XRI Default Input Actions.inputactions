@@ -1646,6 +1646,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "FireTrigger",
+                    "type": "Value",
+                    "id": "afd13e9a-4037-413f-beae-ef19b805a8cd",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -1822,6 +1831,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "UseQuickItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c69e6be0-10a7-48f6-8782-34b5b4ff805a",
+                    "path": "<XRController>{RightHand}/{TriggerButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "FireTrigger",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
