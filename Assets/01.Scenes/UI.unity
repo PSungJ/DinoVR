@@ -21560,7 +21560,7 @@ GameObject:
   - component: {fileID: 1577743528}
   - component: {fileID: 1577743527}
   m_Layer: 18
-  m_Name: Cube
+  m_Name: 6156
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -76784,6 +76784,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7179135350475933187, guid: ff875fa430d83664c87581627e5acad0,
+        type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
