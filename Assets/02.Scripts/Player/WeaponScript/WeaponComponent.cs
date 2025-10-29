@@ -16,6 +16,7 @@ public class WeaponComponent : MonoBehaviour
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI currentAmmoText;
     [SerializeField] private TextMeshProUGUI maxAmmoText;
+    [SerializeField] private Canvas ammoCanvas; //
 
     [Header("Input Action")]
     [SerializeField] private InputActionProperty fireAction;
@@ -26,6 +27,7 @@ public class WeaponComponent : MonoBehaviour
     [SerializeField] private ParticleSystem fireParticle; // 파티클 드래그
     [SerializeField] private AudioSource audioSource; // 총 발사 사운드 재생기
     [SerializeField] private AudioClip fireClip; // 총 발사 사운드 클립
+    [SerializeField] private Animator animator;
 
     [Header("Bullet Pooling")]
     [SerializeField] private string bulletKey = "Bullet_Rifle"; // 🔑 풀링 키 (일치하게)
@@ -35,23 +37,46 @@ public class WeaponComponent : MonoBehaviour
     private void OnEnable()
     {
         UpdateAmmoUI();
+        if (ammoCanvas != null)
+            ammoCanvas.gameObject.SetActive(false); // 시작 시 비활성화
     }
 
     public void SetEquipped(bool equipped)
     {
         isEquipped = equipped;
+
+        if (ammoCanvas != null)
+        {
+            ammoCanvas.gameObject.SetActive(equipped);
+
+            if (equipped && ammoCanvas.renderMode == RenderMode.WorldSpace)
+            {
+                ammoCanvas.worldCamera = Camera.main; // ✅ 월드 스페이스용 카메라 연결
+            }
+        }
     }
+    private void Start()
+    {
+        currentAmmo = maxAmmo;
+        UpdateAmmoUI();
+    }
+
+
 
     private void Update()
     {
         if (!isEquipped || fireAction == null || fireAction.action == null)
         {
+            Debug.LogWarning("[WeaponComponent] 조건 불충족 - isEquipped: " + isEquipped + ", fireAction null? " + (fireAction == null) + ", action null? " + (fireAction.action == null));
             triggerPressedLastFrame = false;
             return;
         }
 
         float triggerValue = fireAction.action.ReadValue<float>();
         bool isTriggerPressed = triggerValue > 0.8f;
+
+        Debug.Log($"[WeaponComponent] 트리거값: {triggerValue}, isTriggerPressed: {isTriggerPressed}, currentAmmo: {currentAmmo}, isEquipped: {isEquipped}, nextFireTime: {nextFireTime}, Time: {Time.time}");
+
 
         if (isTriggerPressed && !triggerPressedLastFrame && Time.time >= nextFireTime)
         {
