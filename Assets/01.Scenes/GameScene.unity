@@ -10739,7 +10739,7 @@ PrefabInstance:
     - target: {fileID: 657184242161839408, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.202
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 657184242161839409, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
@@ -14174,7 +14174,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentHealth: 0
-  maxHealth: 100
+  maxHealth: 300
   currentMana: 50
   maxMana: 50
   healParticlePrefab: {fileID: 176172073}
@@ -42618,7 +42618,7 @@ Transform:
   m_GameObject: {fileID: 1639363044}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.375, z: 0}
+  m_LocalPosition: {x: 0, y: 1.599, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -63091,7 +63091,7 @@ Light:
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 16000, y: 16000}
   m_BounceIntensity: 1
-  m_ColorTemperature: 4500
+  m_ColorTemperature: 6296
   m_UseColorTemperature: 1
   m_BoundingSphereOverride: {x: 6.25e-43, y: 8e-44, z: 0, w: 8e-44}
   m_UseBoundingSphereOverride: 0
