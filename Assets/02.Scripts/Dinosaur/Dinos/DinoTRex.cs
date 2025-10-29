@@ -14,7 +14,7 @@ public class DinoTrex : DinoBase
 
     public override void Searching()
     {
-        if(agent.hasPath)
+        if (agent.hasPath)
             agent.ResetPath();
 
         searchingTime += Time.deltaTime;
@@ -42,7 +42,7 @@ public class DinoTrex : DinoBase
                 float dis = (status.target.position - transform.position).magnitude;
                 if (status.meat != null && dis > status.stats.detactRange / 2f)    // 먹을게 있는데 멀리서 다가온다면
                 {
-                    if(Time.time - lastRoarTime >= 10f)
+                    if (Time.time - lastRoarTime >= 10f)
                         ChangeState(DinoState.ROAR);
                 }
                 else
@@ -61,7 +61,7 @@ public class DinoTrex : DinoBase
                     }
                 }
             }
-            
+
         }
         else if (status.fearOrigin != null && status.fearCurrent > 0)
         {
@@ -125,7 +125,7 @@ public class DinoTrex : DinoBase
             {
                 if (stat.stats.threat < status.stats.threat)
                 {
-                    stat.AddFear(status.stats.threat , transform);
+                    stat.AddFear(status.stats.threat, transform);
                 }
             }
         }
@@ -178,9 +178,14 @@ public class DinoTrex : DinoBase
                 ChangeState(DinoState.CHASING);
             }
         }
-        else        // 사람이라면
+        else if (status.target.tag == "Player")        // 사람이라면
         {
-
+            Vector3 dirToSource = (status.target.position - transform.position).normalized;
+            float angle = Vector3.Angle(transform.forward, dirToSource);
+            if (angle < 90f)
+            {
+                ChangeState(DinoState.CHASING);
+            }
         }
     }
 

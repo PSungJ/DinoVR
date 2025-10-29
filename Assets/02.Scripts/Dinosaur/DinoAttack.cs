@@ -39,11 +39,11 @@ public class DinoAttack : MonoBehaviour
         }
         else                // 상대가 플레이어 라면
         {
-            // var player = other.GetComponent<Player>();
-            // if (player != null)
-            //{
-            //    player.Damage();
-            //}
+            if (other.tag == "Player")
+            {
+                var playerDamage = other.GetComponentInParent<PlayerHealthComponent>();
+                playerDamage.TakeDamage((int)damage);
+            }
         }
     }
 
