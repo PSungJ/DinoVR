@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,13 +35,13 @@ public class PoolingManager : MonoBehaviour
             return;
         }
 
-        InitializePools();
+        StartCoroutine(InitializePoolsAsync());
     }
 
     /// <summary>
-    /// 인스펙터에서 등록된 풀들을 초기화
+    /// 인스펙터에서 등록된 풀들을 비동기 초기화 (렉 방지용)
     /// </summary>
-    private void InitializePools()
+    private IEnumerator InitializePoolsAsync()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
 
@@ -48,21 +49,24 @@ public class PoolingManager : MonoBehaviour
         {
             Queue<GameObject> objectPool = new Queue<GameObject>();
 
-            // 초기 오브젝트 생성
             for (int i = 0; i < pool.size; i++)
             {
                 GameObject obj = Instantiate(pool.prefab);
                 obj.SetActive(false);
                 obj.transform.SetParent(this.transform);
                 objectPool.Enqueue(obj);
+
+                // 한 프레임마다 한 개 생성 (렉 방지)
+                yield return null;
             }
 
-            // 키 중복 체크
             if (poolDictionary.ContainsKey(pool.key))
                 Debug.LogWarning($"Key 중복 : {pool.key}");
             else
                 poolDictionary.Add(pool.key, objectPool);
         }
+
+        Debug.Log("[PoolingManager] 모든 오브젝트 풀 초기화 완료");
     }
 
     /// <summary>

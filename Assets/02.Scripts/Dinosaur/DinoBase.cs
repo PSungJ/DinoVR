@@ -1,8 +1,9 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
 // 기본,  배회,    먹기,     잠,      도망,     공격,       찾기,    포효,   추적,   죽음,   부르기, 은밀
-public enum DinoState { IDLE, ROAMING, EATING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK};
+public enum DinoState { IDLE, ROAMING, EATING, SLEEPING, FLEEING, ATTACKING, SEARCHING, ROAR, CHASING, DEATH , CALL, SNEAK };
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(DinoStatus))]
@@ -64,12 +65,21 @@ public class DinoBase : MonoBehaviour
         DinoInit();
     }
 
-    public void DinoInit()  // 공룡 배치시 실행 해야함
+    public void DinoInit()
     {
         status.StatusInit();
         agent.updateRotation = false;
-        agent.isStopped = true;
-        agent.avoidancePriority = status.stats.pp;
+
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.avoidancePriority = status.stats.pp;
+        }
+        else
+        {
+            Debug.LogWarning($"[DinoInit] {gameObject.name} is not on NavMesh yet. Delaying agent setup.");
+            StartCoroutine(WaitAndInitAgent());
+        }
     }
 
     protected virtual void Update()
@@ -92,7 +102,7 @@ public class DinoBase : MonoBehaviour
     {
         if (currentState == DinoState.IDLE || currentState == DinoState.ROAMING)
         {
-            if (breathSoundTime <= 0)        
+            if (breathSoundTime <= 0)
             {
                 breathSoundTime = Random.Range(5f, 20f);
                 sound.PlayBreath();
@@ -235,11 +245,12 @@ public class DinoBase : MonoBehaviour
 
         if (!isAnimating)
         {
-            if (status.meat != null) {
+            if (status.meat != null)
+            {
                 RotateSmoothly(status.meat.position - transform.position);
                 DinoStatus meat = status.meat.GetComponent<DinoStatus>();
                 meat.hpCurrent -= status.stats.hungerMax / 4f;
-                if(meat.hpCurrent <= 0f)
+                if (meat.hpCurrent <= 0f)
                 {
                     meat.gameObject.SetActive(false);
                 }
@@ -255,7 +266,7 @@ public class DinoBase : MonoBehaviour
 
     public virtual void Sleeping()
     {
-        
+
     }
 
     public virtual void Fleeing()   // 도망
@@ -299,7 +310,7 @@ public class DinoBase : MonoBehaviour
                     RotateSmoothly(status.fearOrigin.position - transform.position, true);
                     if (status.IsAfraid())
                         StartFleeing();
-                    else if (status.fearCurrent >= status.stats.fearThreshold*0.1f)
+                    else if (status.fearCurrent >= status.stats.fearThreshold * 0.1f)
                         StartFleeing();
                 }
                 else if (dis > status.stats.attackRange && Time.time - lastRoarTime >= 15f)  // 거리가 가깝지만 공격사거리 밖이라면
@@ -327,7 +338,7 @@ public class DinoBase : MonoBehaviour
     }
     public virtual void Sneak()
     {
-        
+
     }
 
     public virtual void Chasing()
@@ -375,7 +386,7 @@ public class DinoBase : MonoBehaviour
             {
                 ChangeState(DinoState.ATTACKING);
             }
-            else if ( status.fearCurrent > 0)                                    // 그것도 다 아니라면 자리에서 벗어나기
+            else if (status.fearCurrent > 0)                                    // 그것도 다 아니라면 자리에서 벗어나기
                 StartFleeing();
         }
     }
@@ -453,7 +464,7 @@ public class DinoBase : MonoBehaviour
 
         if (currentState != DinoState.FLEEING)  // 처음 도망갈 때
         {
-                                                // 도망 시작시 주변에 공포 전파
+            // 도망 시작시 주변에 공포 전파
             Collider[] dinos = Physics.OverlapSphere(transform.position, 30f, LayerMask.GetMask("Dinosaur"));
             foreach (Collider col in dinos)
             {
@@ -485,8 +496,8 @@ public class DinoBase : MonoBehaviour
             animator.SetTrigger(_aniHurt);
         }
 
-        if(!status.stats.isFoodMeat)  // 초식이면 공포 원인으로 부터 공포 받음
-            status.AddFear(status.stats.hpMax - status.hpCurrent,status.fearOrigin);
+        if (!status.stats.isFoodMeat)  // 초식이면 공포 원인으로 부터 공포 받음
+            status.AddFear(status.stats.hpMax - status.hpCurrent, status.fearOrigin);
         else if (status.fearOrigin != null) // 육식인데 공포 원인이 있으면 공포 원인으로 부터 공포 받음
             status.AddFear(status.stats.hpMax - status.hpCurrent, status.fearOrigin);
         else                                // 육식인데 공포 원인이 없으면 타겟한테 공포 받음
@@ -501,7 +512,7 @@ public class DinoBase : MonoBehaviour
     public void ChangeState(DinoState newState)
     {
         ResetAnimationTrigger();
-        if(newState == DinoState.ATTACKING || newState == DinoState.ROAR)
+        if (newState == DinoState.ATTACKING || newState == DinoState.ROAR)
             isAnimating = true;
         currentState = newState;
 
@@ -524,7 +535,7 @@ public class DinoBase : MonoBehaviour
 
     protected void ResetTarget()
     {
-        if(currentState == DinoState.SEARCHING)
+        if (currentState == DinoState.SEARCHING)
             ChangeState(DinoState.IDLE);
         else
             ChangeState(DinoState.SEARCHING);
@@ -598,9 +609,32 @@ public class DinoBase : MonoBehaviour
         // 각도가 작을수록 빠르게, 클수록 느리게 전진
         float alignmentFactor = Mathf.Clamp01(1f - (angle / 90f)); // 0~90도 기준으로 보정
         float currentSpeed = agent.speed * alignmentFactor;
-       
+
         // 이동
         transform.position += transform.forward * currentSpeed * Time.deltaTime;
     }
+
+     IEnumerator WaitAndInitAgent()
+    {
+        // 최대 0.5초까지 NavMesh에 올라올 때까지 대기
+        float timeout = 0.5f;
+        while (!agent.isOnNavMesh && timeout > 0f)
+        {
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.avoidancePriority = status.stats.pp;
+            Debug.Log($"[DinoInit] {gameObject.name} NavMeshAgent initialized after wait.");
+        }
+        else
+        {
+            Debug.LogError($"[DinoInit] {gameObject.name} failed to initialize NavMeshAgent: not on NavMesh.");
+        }
+    }
+
 
 }
