@@ -64,7 +64,7 @@ public class DinoStatus : MonoBehaviour
     {
                             // 스탯 할당 전에는 Gizmo 그리지 않음
         if (stats == null) return;
-        Gizmos.color = Color.white.WithAlpha(0.1f);
+        Color gizmoColor = Color.white; gizmoColor.a = 0.1f; Gizmos.color = gizmoColor;
         Gizmos.DrawWireSphere(transform.position, stats.awareness);
         Gizmos.DrawWireSphere(transform.position+ transform.forward * stats.detactRange, stats.awareness);
     }

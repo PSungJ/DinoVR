@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using static UnityEditor.Progress;
 
 // ----------------------------------------------------
 // [상태 이상 타입 Enum]
